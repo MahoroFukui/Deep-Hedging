@@ -206,7 +206,7 @@ class ExperimentRunner:
 
 class SimpleRunner(ExperimentRunner):
 
-
+# difference from experiment runner -> training process is omitted, and only validation is implemented
     def run(self,
             contingent_claim: Claim,
             hedging_instruments: List[Instrument],
@@ -220,7 +220,7 @@ class SimpleRunner(ExperimentRunner):
             h_dim = 15,
             extra_params = None,
             ) -> None:
-
+        
         self.agent = agents[self.agent_type](criterion, cost_function, hedging_instruments, extra_params,  step_interest_rate, h_dim=h_dim, pref_gpu=self.pref_gpu)
         loss = self.agent.validate(contingent_claim, int(1e6), T, logging=True)
         self.validation_logs = self.agent.validation_logs
