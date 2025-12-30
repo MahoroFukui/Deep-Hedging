@@ -217,7 +217,7 @@ class SimpleRunner(ExperimentRunner):
             epochs = 100,
             paths = int(1e5),
             verbose = True,
-            cost_function,
+            cost_function: CostFunction = PorportionalCost(0.00),
             h_dim = 15,
             extra_params = None,
             ) -> None:
