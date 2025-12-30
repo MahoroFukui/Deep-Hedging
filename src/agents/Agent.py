@@ -162,12 +162,25 @@ class Agent(torch.nn.Module, ABC):
 
         for epoch in tqdm(range(epochs), desc="Training", total=epochs, leave=False, unit="epoch"):
             self.train()
-            pl, _ = self.pl(contingent_claim, paths, T, False)
-            loss = - self.criterion(pl)
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-            losses.append(loss.item())
+            epoch_loss_sum = 0.0
+            epoch_paths = 0
+            batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
+            for start, current_batch in batch_iter:
+                pl, _ = self.pl(contingent_claim, current_batch, T, False)
+                loss = - self.criterion(pl)
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+                epoch_loss_sum += loss.item() * current_batch
+                epoch_paths += current_batch
+
+                if logging:
+                    if "training_PL" not in self.training_logs:
+                        self.training_logs["training_PL"] = torch.Tensor(epochs, paths).cpu()
+
+                    self.training_logs["training_PL"][epoch, start:start + current_batch] = pl.detach().cpu()
+            epoch_loss = epoch_loss_sum / max(epoch_paths, 1)
+            losses.append(epoch_loss)
             if verbose:
                 print(f"Epoch: {epoch}, Loss: {loss.item(): .2f}")
 
