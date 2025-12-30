@@ -182,7 +182,7 @@ class Agent(torch.nn.Module, ABC):
             epoch_loss = epoch_loss_sum / max(epoch_paths, 1)
             losses.append(epoch_loss)
             if verbose:
-                print(f"Epoch: {epoch}, Loss: {loss.item(): .2f}")
+                print(f"Epoch: {epoch}, Loss: {epoch_loss: .2f}")
 
             if logging:
                 if "training_PL" not in self.training_logs:
