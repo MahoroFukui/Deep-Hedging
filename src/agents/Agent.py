@@ -150,7 +150,7 @@ class Agent(torch.nn.Module, ABC):
         return profit, claim_payoff
 
 
-    def fit(self, contingent_claim: Claim, epochs = 50, paths = 100, verbose = False, T = 365, logging = True):
+    def fit(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True):
         """
         :param contingent_claim: Instrument
         :param epochs: int
