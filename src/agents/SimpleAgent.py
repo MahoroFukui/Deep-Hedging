@@ -15,7 +15,8 @@ class SimpleAgent(Agent):
                  interest_rate,
                  lr=0.005,
                  pref_gpu=True,
-                 h_dim=15,):
+                 h_dim=15,
+                 optimizer: str = "adam",):
 
         self.N = len(hedging_instruments)
         network_input_dim = self.input_dim()
@@ -30,7 +31,10 @@ class SimpleAgent(Agent):
             ('fc3', torch.nn.Linear(h_dim, self.N))
         ])
         ).to(self.device)
-        self.optimizer = torch.optim.Adam(self.network.parameters(), lr=lr)
+        if optimizer.lower() == "sgd":
+            self.optimizer = torch.optim.SGD(self.network.parameters(), lr=lr)
+        else:
+            self.optimizer = torch.optim.Adam(self.network.parameters(), lr=lr)
 
 
     def input_dim(self) -> int:
