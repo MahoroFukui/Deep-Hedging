@@ -212,7 +212,7 @@ class SimpleRunner(ExperimentRunner):
             hedging_instruments: List[Instrument],
             criterion: torch.nn.Module,
             T = 10,
-            step_interest_rate = 0.0,
+            step_interest_rate,
             epochs = 50,
             paths = int(1e5),
             verbose = True,
