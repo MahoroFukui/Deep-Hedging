@@ -40,6 +40,7 @@ class ExperimentRunner:
             step_interest_rate = 0,
             epochs = 50,
             paths = int(1e5),
+            batch_paths = int(1e4)
             verbose = True,
             cost_function: CostFunction = PorportionalCost(0.00),
             h_dim = 15
@@ -47,7 +48,7 @@ class ExperimentRunner:
 
         self.step_interest_rate = step_interest_rate
         self.agent: Agent = agents[self.agent_type](criterion, cost_function, hedging_instruments, step_interest_rate, h_dim=h_dim, pref_gpu=self.pref_gpu)
-        self.agent.fit(contingent_claim, epochs, paths, verbose, T, logging=True)
+        self.agent.fit(contingent_claim, batch_paths, epochs, paths, verbose, T, logging=True)
         self.training_logs = self.agent.training_logs
         loss = self.agent.validate(contingent_claim, int(1e6), T, logging=True)
         self.validation_logs = self.agent.validation_logs
