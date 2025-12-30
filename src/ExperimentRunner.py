@@ -213,10 +213,10 @@ class SimpleRunner(ExperimentRunner):
             criterion: torch.nn.Module,
             T = 10,
             step_interest_rate,
-            epochs = 50,
+            epochs,
             paths = int(1e5),
             verbose = True,
-            cost_function: CostFunction = PorportionalCost(0.00),
+            cost_function,
             h_dim = 15,
             extra_params = None,
             ) -> None:
