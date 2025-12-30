@@ -40,7 +40,6 @@ class ExperimentRunner:
             step_interest_rate = 0,
             epochs = 50,
             paths = int(1e5),
-            batch_paths = int(1e4),
             verbose = True,
             cost_function: CostFunction = PorportionalCost(0.00),
             h_dim = 15,
