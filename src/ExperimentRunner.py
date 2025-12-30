@@ -214,7 +214,7 @@ class SimpleRunner(ExperimentRunner):
             criterion: torch.nn.Module,
             T = 10,
             step_interest_rate = 0,
-            epochs,
+            epochs = 100,
             paths = int(1e5),
             verbose = True,
             cost_function,
