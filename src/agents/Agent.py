@@ -174,11 +174,7 @@ class Agent(torch.nn.Module, ABC):
                 epoch_loss_sum += loss.item() * current_batch
                 epoch_paths += current_batch
 
-                if logging:
-                    if "training_PL" not in self.training_logs:
-                        self.training_logs["training_PL"] = torch.Tensor(epochs, paths).cpu()
-
-                    self.training_logs["training_PL"][epoch, start:start + current_batch] = pl.detach().cpu()
+                self.training_logs["training_PL"][epoch, start:start + current_batch] = pl.detach().cpu()
             epoch_loss = epoch_loss_sum / max(epoch_paths, 1)
             losses.append(epoch_loss)
             if verbose:
