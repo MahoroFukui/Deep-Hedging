@@ -248,7 +248,7 @@ class SimpleRunner(ExperimentRunner):
 
 
 
-def plot_dists(runners: List[ExperimentRunner], save=False, file_prefix='plot', x_lim=2):
+def plot_dists(runners: List[ExperimentRunner], save=False, file_prefix='plot', x_lim=5):
     # plot_val_dist for multiple runners
     plot = plt.figure()
     for runner in runners:
