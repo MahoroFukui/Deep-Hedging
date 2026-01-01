@@ -184,11 +184,6 @@ class Agent(torch.nn.Module, ABC):
             if verbose:
                 print(f"Epoch: {epoch}, Loss: {epoch_loss: .2f}")
 
-            if logging:
-                if "training_PL" not in self.training_logs:
-                    self.training_logs["training_PL"] = torch.Tensor(epochs, paths).cpu()
-
-                self.training_logs["training_PL"][epoch] = pl.detach().cpu()
         if logging:
             self.training_logs["training_losses"] = torch.Tensor(losses).cpu()
 
