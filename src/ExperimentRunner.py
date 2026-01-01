@@ -39,11 +39,11 @@ class ExperimentRunner:
             T = 10,
             step_interest_rate = 0,
             epochs = 50,
-            paths = int(1e5),
+            paths = int(1e4),
             verbose = True,
             cost_function: CostFunction = PorportionalCost(0.00),
             h_dim = 15,
-            batch_paths = int(1e4)
+            batch_paths = 256
             ) -> None:
 
         self.step_interest_rate = step_interest_rate
