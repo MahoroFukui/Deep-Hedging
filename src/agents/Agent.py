@@ -159,8 +159,8 @@ class Agent(torch.nn.Module, ABC):
         :return: None
         """
         losses = []
-        if logging:
-            self.training_logs["training_PL"] = torch.zeros(epochs, paths)
+        
+        self.training_logs["training_PL"] = torch.zeros(epochs, paths)
 
         for epoch in tqdm(range(epochs), desc="Training", total=epochs, leave=False, unit="epoch"):
             self.train()
