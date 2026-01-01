@@ -159,6 +159,8 @@ class Agent(torch.nn.Module, ABC):
         :return: None
         """
         losses = []
+        if logging:
+            self.training_logs["training_PL"] = torch.zeros(epochs, paths)
 
         for epoch in tqdm(range(epochs), desc="Training", total=epochs, leave=False, unit="epoch"):
             self.train()
@@ -181,6 +183,7 @@ class Agent(torch.nn.Module, ABC):
                 print(f"Epoch: {epoch}, Loss: {epoch_loss: .2f}")
 
         if logging:
+            
             self.training_logs["training_losses"] = torch.Tensor(losses).cpu()
 
         return losses
