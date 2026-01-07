@@ -88,7 +88,7 @@ class Agent(torch.nn.Module, ABC):
             # define state
             state = hedge_paths[:,:t+1], cash_account[:,:t], positions[:,:t], T
             # compute action
-            action = self.policy(state) # (P, N)
+            action = torch.clamp(self.policy(state), -5, 5) # (P, N)
             # update positions
             positions[:, t] = positions[:, t-1] + action # (P, N)
             # compute cost of action
