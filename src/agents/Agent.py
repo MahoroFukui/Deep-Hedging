@@ -299,7 +299,7 @@ class Agent(torch.nn.Module, ABC):
             epoch_paths = 0
             batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
             for start, current_batch in batch_iter:
-                pl, _ = self.pl(contingent_claim, current_batch, T, False) this is outdated
+                pl, _ = self.pl(contingent_claim, current_batch, T, False)
                 loss = - self.criterion(pl)
                 loss = self.crra_ruin_penalized_loss(
                     terminal_wealth=profit,        # or terminal_wealth if you want ruin relative to gross wealth
