@@ -131,8 +131,6 @@ class Agent(torch.nn.Module, ABC):
 
         state0 = (hedge_paths[:, :1], cash_account[:, :1], positions[:, :1], T)  # same convention
         dtheta0 = self.policy(state0)
-
-        #cash0 = torch.full((P,), float(initial_wealth), device=device)
     
         #state0 = (hedge_paths[:, :1, :], cash0.unsqueeze(1), positions[:, :1, :], T)
         #dtheta0 = self.policy(state0)  # trade increment (P, N)
