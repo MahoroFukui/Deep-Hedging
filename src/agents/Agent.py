@@ -66,7 +66,7 @@ class Agent(torch.nn.Module, ABC):
         return self.forward(state)
 
     # returns the final p&l
-    def compute_portfolio(self, hedge_paths, logging = True) -> torch.Tensor:
+    def compute_portfolio(self, hedge_paths, logging = True, q = 0.0) -> torch.Tensor:
         # number of time steps
         P, T, N = hedge_paths.shape
 
@@ -74,7 +74,12 @@ class Agent(torch.nn.Module, ABC):
         portfolio_value = torch.zeros(P, T, device=self.device)
         positions = torch.zeros(P, T, N, device=self.device)
 
-        state = hedge_paths[:,:1], cash_account[:,:1], positions[:,:1], T
+        if q != 0:
+            q_batch = q * torch.ones(P, 1, device=self.device)
+        else:
+            q_batch = torch.zeros(P, 1, device=self.device)
+        
+        state = hedge_paths[:,:1], cash_account[:,:1], positions[:,:1], T, q_batch
         action = self.policy(state)
         positions[:, 0] = action
         cost_of_action = self.cost_function(action, state)
@@ -87,7 +92,7 @@ class Agent(torch.nn.Module, ABC):
 
         for t in range(1, T):
             # define state
-            state = hedge_paths[:,:t+1], cash_account[:,:t], positions[:,:t], T
+            state = hedge_paths[:,:t+1], cash_account[:,:t], positions[:,:t], T, q_batch
             # compute action
             action = self.policy(state)
             # update positions
