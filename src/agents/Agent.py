@@ -112,6 +112,80 @@ class Agent(torch.nn.Module, ABC):
 
         return portfolio_value[:,-1] + cash_account[:,-1]
 
+    def compute_portfolio_if_CRRA(self, hedge_paths, logging=False, initial_wealth: float = 1.0) -> torch.Tensor:
+    P, T, N = hedge_paths.shape
+    device = self.device
+    eps = 1e-12
+
+    cash_account = torch.zeros(P, T, device=device)
+    portfolio_value = torch.zeros(P, T, device=device)
+    positions = torch.zeros(P, T, N, device=device)
+
+    # ---------- t = 0 ----------
+    S0 = hedge_paths[:, 0]  # (P, N)
+    cash0 = torch.full((P,), float(initial_wealth), device=device)
+
+    state0 = (S0, cash0, positions[:, 0], T)
+    dtheta0 = self.policy(state0)  # trade increment (P, N)
+
+    # Optional: clamp trade increment (not required for self-financing, but stabilizes training)
+    # dtheta0 = torch.clamp(dtheta0, -5.0, 5.0)
+
+    spend0 = (dtheta0 * S0).sum(dim=-1)                 # (P,)  positive = pay cash
+    cost0 = self.cost_function(dtheta0, state0)
+    cost0 = cost0.squeeze(-1) if cost0.dim() > 1 else cost0
+
+    need0 = spend0 + cost0                               # cash needed net of sells
+    scale0 = torch.ones_like(need0)
+    mask0 = need0 > 0
+    scale0[mask0] = torch.clamp(cash0[mask0] / (need0[mask0] + eps), max=1.0)
+
+    dtheta0 = dtheta0 * scale0.unsqueeze(-1)
+    spend0 = spend0 * scale0
+    cost0 = cost0 * scale0  # exact if proportional / 1-homogeneous costs; otherwise recompute cost_fn here
+
+    positions[:, 0] = dtheta0
+    cash_account[:, 0] = cash0 - spend0 - cost0
+    portfolio_value[:, 0] = cash_account[:, 0] + (positions[:, 0] * S0).sum(dim=-1)
+
+    # ---------- t = 1..T-1 ----------
+    for t in range(1, T):
+        St = hedge_paths[:, t]  # (P, N)
+
+        # accrue interest on cash
+        cash_prev = cash_account[:, t-1] * (1.0 + self.step_interest_rate)
+
+        state = (St, cash_prev, positions[:, t-1], T)
+        dtheta = self.policy(state)  # trade increment (P, N)
+
+        # Optional stabilization clamp on increment
+        # dtheta = torch.clamp(dtheta, -5.0, 5.0)
+
+        spend = (dtheta * St).sum(dim=-1)               # (P,)
+        cost = self.cost_function(dtheta, state)
+        cost = cost.squeeze(-1) if cost.dim() > 1 else cost
+
+        need = spend + cost                              # if >0, we must have enough cash
+        scale = torch.ones_like(need)
+        mask = need > 0
+        scale[mask] = torch.clamp(cash_prev[mask] / (need[mask] + eps), max=1.0)
+
+        dtheta = dtheta * scale.unsqueeze(-1)
+        spend = spend * scale
+        cost = cost * scale  # exact if proportional / 1-homogeneous costs; otherwise recompute cost_fn here
+
+        positions[:, t] = positions[:, t-1] + dtheta
+        cash_account[:, t] = cash_prev - spend - cost
+        portfolio_value[:, t] = cash_account[:, t] + (positions[:, t] * St).sum(dim=-1)
+
+    if logging:
+        self.portfolio_logs["cash_account"] = cash_account.detach().cpu()
+        self.portfolio_logs["positions"] = positions.detach().cpu()
+        self.portfolio_logs["portfolio_value"] = portfolio_value.detach().cpu()
+
+    return portfolio_value
+
+
     def generate_paths(self, P, T, contingent_claim):
         # 1. check how many primaries are invloved
         primaries: set = set([hedge.primary() for hedge in self.hedging_instruments])
@@ -127,7 +201,7 @@ class Agent(torch.nn.Module, ABC):
 
         return hedge_paths, primary_paths[contingent_claim.primary()]
 
-    def pl(self, contingent_claim: Claim, P, T, logging = False):
+    def pl(self, contingent_claim: Claim, P, T, logging = False): #calculates pl if criterion is not CRRA/is entropy; calculates terminal wealth if criterion is CRRA
         """
         :param contingent_claim: Instrument
         :param paths: int
@@ -140,8 +214,13 @@ class Agent(torch.nn.Module, ABC):
         hedge_paths, claim_path = self.generate_paths(P, T, contingent_claim) # P x T x N, P x 1
         claim_payoff = contingent_claim.payoff(claim_path).to(self.device) # P x 1
 
-        portfolio_value = self.compute_portfolio(hedge_paths, logging) # P
+        if criterion is not CRRA:
+            portfolio_value = self.compute_portfolio(hedge_paths, logging) # P
+        else:
+            portfolio_value = self.compute_portfolio_if_CRRA(self, hedge_paths, logging=False, initial_wealth: float = 1.0)
+            
         profit = portfolio_value - claim_payoff # P
+        
         if logging:
             self.portfolio_logs["claim_payoff"] = claim_payoff.detach().cpu()
             delta = contingent_claim.delta(claim_path)
