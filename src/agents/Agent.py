@@ -125,7 +125,7 @@ class Agent(torch.nn.Module, ABC):
         device = self.device
         eps = 1e-12
     
-        cash_account = torch.zeros(P, T, N device=device) # putting N for implementation purposes
+        cash_account = torch.zeros(P, T, device=device) 
         portfolio_value = torch.zeros(P, T, device=device)
         positions = torch.zeros(P, T, N, device=device)
         
