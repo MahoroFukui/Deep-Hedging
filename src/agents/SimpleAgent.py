@@ -45,7 +45,7 @@ class SimpleAgent(Agent):
         :param state: tuple
         :return: torch.Tensor
         """
-        paths, cash_account, positions, T, = state
+        #paths, cash_account, positions, T, = state  outdated
 
         if len(state) == 4:
             paths, cash_account, positions, T = state
