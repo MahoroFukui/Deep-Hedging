@@ -142,9 +142,6 @@ class Agent(torch.nn.Module, ABC):
         state0 = (hedge_paths[:, :1], cash_account[:, :1], positions[:, :1], T, q_batch)  # same convention
         dtheta0 = self.policy(state0)
     
-        #state0 = (hedge_paths[:, :1, :], cash0.unsqueeze(1), positions[:, :1, :], T)
-        #dtheta0 = self.policy(state0)  # trade increment (P, N)
-    
         spend0 = (dtheta0 * S0).sum(dim=-1)                 # (P,)  positive = pay cash
         cost0 = self.cost_function(dtheta0, state0)
         cost0 = cost0.squeeze(-1) if cost0.dim() > 1 else cost0
@@ -169,9 +166,7 @@ class Agent(torch.nn.Module, ABC):
             # accrue interest on cash
             #cash_prev = cash_account[:, t-1] * (1.0 + self.interest_rate) outdated
             cash_account[:, t] = cash_account[:, t-1] * (1.0 + self.interest_rate)
-            
-            #state  = (hedge_paths[:, :t+1, :], cash_prev.unsqueeze(1), positions[:, :t, :], T)
-            #dtheta = self.policy(state)  # trade increment (P, N)
+        
             state = (hedge_paths[:, :t+1], cash_account[:, :t+1], positions[:, :t], T, q_batch)  # same as compute_portfolio; outdated: cash_account was cash_account[:, :t]
             dtheta = self.policy(state)
             cash_avail = cash_account[:, t-1] * (1.0 + self.interest_rate)       # for scaling only
