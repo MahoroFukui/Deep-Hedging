@@ -17,6 +17,10 @@ class RecurrentAgent(SimpleAgent):
 
         simple_features = super().feature_transform(state) # (P, N+1)
 
+        P, T, N = state[0].shape
+
+        times = torch.ones(P, 1, device=self.device) * (T-t) # (P, 1)
+
         last_prices = state[0][:, -1, :] # (P, N)
         # log prices
         log_prices = torch.log(last_prices) # (P, N)
