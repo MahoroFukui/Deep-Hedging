@@ -17,8 +17,8 @@ class RecurrentAgent(SimpleAgent):
 
         simple_features = super().feature_transform(state) # (P, N+1)
 
-        current_cash_account_before = state[1].unsqueeze(2)
-        current_cash_account = current_cash_account_before[:, -1]
+        current_cash_account_before = state[1][:, -1]
+       
         
         current_positions = state[2][:, -1] # (P, N)
         q_batch = state[4]
