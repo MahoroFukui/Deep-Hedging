@@ -58,28 +58,12 @@ class Agent(torch.nn.Module, ABC):
         pass
 
 
-    #def policy(self, state: tuple) -> torch.Tensor:
+    def policy(self, state: tuple) -> torch.Tensor:
         """
         :param x: torch.Tensor
         :return: torch.Tensor
         """
-        #return self.forward(state)
-    def policy(self, state):
-        hedge_hist, cash_hist, pos_hist, T, q_batch = state
-        # hedge_hist: (P, t, N), cash_hist: (P, t), pos_hist: (P, t, N), q_batch: (P,1)
-    
-        P, t, N = hedge_hist.shape
-    
-        # example: build features for the last time step
-        x_last = torch.cat([
-            hedge_hist[:, -1, :],                 # (P,N)
-            cash_hist[:, -1].unsqueeze(-1),       # (P,1)
-            pos_hist[:, -1, :],                   # (P,N)
-            q_batch                                # (P,1)  <-- add q
-        ], dim=-1)
-    
-        # then feed x_last into your network as usual
-        return self.network(x_last)
+        return self.forward(state)
 
     # returns the final p&l
     def compute_portfolio(self, hedge_paths, logging = True) -> torch.Tensor:
