@@ -113,7 +113,7 @@ class Agent(torch.nn.Module, ABC):
 
         return portfolio_value[:,-1] + cash_account[:,-1]
 
-    def compute_portfolio_if_CRRA(self, hedge_paths, logging=True, initial_wealth: float = 1.0) -> torch.Tensor:
+    def compute_portfolio_if_CRRA(self, hedge_paths, logging=True, initial_wealth: float = 1.0, q: torch.Tensor = None) -> torch.Tensor:
         if hedge_paths.dim() == 2:
             hedge_paths = hedge_paths.unsqueeze(-1)
         P, T, N = hedge_paths.shape #reminder: N is number of hedging instrument. If it's just underlying stock, N=1.
@@ -123,13 +123,18 @@ class Agent(torch.nn.Module, ABC):
         cash_account = torch.zeros(P, T, device=device)
         portfolio_value = torch.zeros(P, T, device=device)
         positions = torch.zeros(P, T, N, device=device)
-    
+        
         # ---------- t = 0 ----------
         S0 = hedge_paths[:, 0]  # (P, N)
         cash0 = torch.full((P,), float(initial_wealth), device=device)
         cash_account[:, 0] = cash0  # put initial wealth into the history tensor
 
-        state0 = (hedge_paths[:, :1], cash_account[:, :1], positions[:, :1], T)  # same convention
+        if q is None:
+            q_batch = torch.zeros(P, 1, device=self.device)
+        else:
+            q_batch = q.reshape(1, 1).expand(P, 1)
+
+        state0 = (hedge_paths[:, :1], cash_account[:, :1], positions[:, :1], T, q_batch)  # same convention
         dtheta0 = self.policy(state0)
     
         #state0 = (hedge_paths[:, :1, :], cash0.unsqueeze(1), positions[:, :1, :], T)
@@ -165,7 +170,7 @@ class Agent(torch.nn.Module, ABC):
             
             #state  = (hedge_paths[:, :t+1, :], cash_prev.unsqueeze(1), positions[:, :t, :], T)
             #dtheta = self.policy(state)  # trade increment (P, N)
-            state = (hedge_paths[:, :t+1], cash_account[:, :t+1], positions[:, :t], T)  # same as compute_portfolio; outdated: cash_account was cash_account[:, :t]
+            state = (hedge_paths[:, :t+1], cash_account[:, :t+1], positions[:, :t], T, q_batch)  # same as compute_portfolio; outdated: cash_account was cash_account[:, :t]
             dtheta = self.policy(state)
             cash_avail = cash_account[:, t-1] * (1.0 + self.interest_rate)       # for scaling only
     
