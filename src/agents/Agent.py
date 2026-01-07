@@ -126,10 +126,15 @@ class Agent(torch.nn.Module, ABC):
     
         # ---------- t = 0 ----------
         S0 = hedge_paths[:, 0]  # (P, N)
-        cash0 = torch.full((P,), float(initial_wealth), device=device)
+        cash_account[:, 0] = cash0  # put initial wealth into the history tensor
+
+        state0 = (hedge_paths[:, :1], cash_account[:, :1], positions[:, :1], T)  # same convention
+        dtheta0 = self.policy(state0)
+
+        #cash0 = torch.full((P,), float(initial_wealth), device=device)
     
-        state0 = (hedge_paths[:, :1, :], cash0.unsqueeze(1), positions[:, :1, :], T)
-        dtheta0 = self.policy(state0)  # trade increment (P, N)
+        #state0 = (hedge_paths[:, :1, :], cash0.unsqueeze(1), positions[:, :1, :], T)
+        #dtheta0 = self.policy(state0)  # trade increment (P, N)
     
         # Optional: clamp trade increment (not required for self-financing, but stabilizes training)
         # dtheta0 = torch.clamp(dtheta0, -5.0, 5.0)
@@ -158,8 +163,12 @@ class Agent(torch.nn.Module, ABC):
             # accrue interest on cash
             cash_prev = cash_account[:, t-1] * (1.0 + self.step_interest_rate)
     
-            state  = (hedge_paths[:, :t+1, :], cash_prev.unsqueeze(1), positions[:, :t, :], T)
-            dtheta = self.policy(state)  # trade increment (P, N)
+            #state  = (hedge_paths[:, :t+1, :], cash_prev.unsqueeze(1), positions[:, :t, :], T)
+            #dtheta = self.policy(state)  # trade increment (P, N)
+            state = (hedge_paths[:, :t+1], cash_account[:, :t], positions[:, :t], T)  # same as compute_portfolio
+            dtheta = self.policy(state)
+            cash_avail = cash_account[:, t-1] * (1.0 + self.step_interest_rate)       # for scaling only
+
     
             # Optional stabilization clamp on increment
             # dtheta = torch.clamp(dtheta, -5.0, 5.0)
@@ -171,14 +180,14 @@ class Agent(torch.nn.Module, ABC):
             need = spend + cost                              # if >0, we must have enough cash
             scale = torch.ones_like(need)
             mask = need > 0
-            scale[mask] = torch.clamp(cash_prev[mask] / (need[mask] + eps), max=1.0)
+            scale[mask] = torch.clamp(cash_avail[mask] / (need[mask] + eps), max=1.0)
     
             dtheta = dtheta * scale.unsqueeze(-1)
             spend = spend * scale
             cost = cost * scale  # exact if proportional / 1-homogeneous costs; otherwise recompute cost_fn here
     
             positions[:, t] = positions[:, t-1] + dtheta
-            cash_account[:, t] = cash_prev - spend - cost
+            cash_account[:, t] = cash_avail - spend - cost
             portfolio_value[:, t] = cash_account[:, t] + (positions[:, t] * St).sum(dim=-1)
     
         if logging:
