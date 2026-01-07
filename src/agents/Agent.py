@@ -116,7 +116,7 @@ class Agent(torch.nn.Module, ABC):
     def compute_portfolio_if_CRRA(self, hedge_paths, logging=False, initial_wealth: float = 1.0) -> torch.Tensor:
         if hedge_paths.dim() == 2:
             hedge_paths = hedge_paths.unsqueeze(-1)
-        P, T, N = hedge_paths.shape
+        P, T, N = hedge_paths.shape #reminder: N is number of hedging instrument. If it's just underlying stock, N=1.
         device = self.device
         eps = 1e-12
     
@@ -280,6 +280,7 @@ class Agent(torch.nn.Module, ABC):
         return base_loss + lambda_ruin * penalty
 
     def fit(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True):
+        # non-CRRA case
         """
         :param contingent_claim: Instrument
         :param epochs: int
