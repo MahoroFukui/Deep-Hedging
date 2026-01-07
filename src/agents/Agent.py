@@ -160,17 +160,14 @@ class Agent(torch.nn.Module, ABC):
             St = hedge_paths[:, t]  # (P, N)
     
             # accrue interest on cash
-            cash_prev = cash_account[:, t-1] * (1.0 + self.interest_rate)
-    
+            #cash_prev = cash_account[:, t-1] * (1.0 + self.interest_rate) outdated
+            cash_account[:, t] = cash_account[:, t-1] * (1.0 + self.interest_rate)
+            
             #state  = (hedge_paths[:, :t+1, :], cash_prev.unsqueeze(1), positions[:, :t, :], T)
             #dtheta = self.policy(state)  # trade increment (P, N)
-            state = (hedge_paths[:, :t+1], cash_account[:, :t], positions[:, :t], T)  # same as compute_portfolio
+            state = (hedge_paths[:, :t+1], cash_account[:, :t+1], positions[:, :t], T)  # same as compute_portfolio; outdated: cash_account was cash_account[:, :t]
             dtheta = self.policy(state)
             cash_avail = cash_account[:, t-1] * (1.0 + self.interest_rate)       # for scaling only
-
-    
-            # Optional stabilization clamp on increment
-            # dtheta = torch.clamp(dtheta, -5.0, 5.0)
     
             spend = (dtheta * St).sum(dim=-1)               # (P,)
             cost = self.cost_function(dtheta, state)
@@ -178,7 +175,7 @@ class Agent(torch.nn.Module, ABC):
     
             need = spend + cost                              # if >0, we must have enough cash
             scale = torch.ones_like(need) #create tensor of same shape but all 1s
-            mask = need > 0
+            mask = need > 0 #mask is a tensor of Booleans, showing if each component is >0 or not
             scale[mask] = torch.clamp(cash_avail[mask] / (need[mask] + eps), max=1.0)
     
             dtheta = dtheta * scale.unsqueeze(-1)
@@ -186,7 +183,7 @@ class Agent(torch.nn.Module, ABC):
             cost = cost * scale  # exact if proportional / 1-homogeneous costs; otherwise recompute cost_fn here
     
             positions[:, t] = positions[:, t-1] + dtheta
-            cash_account[:, t] = cash_avail - spend - cost
+            cash_account[:, t] = cash_account[:, t] - spend - cost
             portfolio_value[:, t] = cash_account[:, t] + (positions[:, t] * St).sum(dim=-1)
     
         if logging:
@@ -197,10 +194,10 @@ class Agent(torch.nn.Module, ABC):
                 "hedge_paths": hedge_paths.detach().cpu(),
             }
 
-        total_wealth = portfolio_value + cash_account  # (P,T)
-        terminal_wealth = total_wealth[:, -1]  # (P,)
+        all_wealth_paths = portfolio_value + cash_account  # (P,T)
+        terminal_wealth = all_wealth_paths[:, -1]  # (P,)
         
-        return terminal_wealth, total_wealth
+        return terminal_wealth, all_wealth_paths
 
 
     def generate_paths(self, P, T, contingent_claim):
