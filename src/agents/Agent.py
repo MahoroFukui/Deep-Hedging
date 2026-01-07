@@ -168,7 +168,7 @@ class Agent(torch.nn.Module, ABC):
             #dtheta = self.policy(state)  # trade increment (P, N)
             state = (hedge_paths[:, :t+1], cash_account[:, :t], positions[:, :t], T)  # same as compute_portfolio
             dtheta = self.policy(state)
-            cash_avail = cash_account[:, t-1] * (1.0 + self.step_interest_rate)       # for scaling only
+            cash_avail = cash_account[:, t-1] * (1.0 + self.interest_rate)       # for scaling only
 
     
             # Optional stabilization clamp on increment
