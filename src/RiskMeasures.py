@@ -100,3 +100,49 @@ class Variance(RiskMeasure):
         # portifolio_value: P x 1 (final portfolio value for every path)
         # return: 1 x 1
         return - portfolio_value.var()
+        
+class CRRA(nn.Module):
+    """
+    Criterion to be plugged into Agent.fit():
+        fit() computes loss = -criterion(pl)
+    where pl is terminal P&L from Agent.pl().
+
+    This wrapper maps:
+        pl  ->  W_T = w0 + pl  ->  CRRA certainty equivalent (or expected utility)
+
+    IMPORTANT:
+    - Requires W_T > 0; we clamp by eps.
+    - Returns a scalar to maximize (so fit() can minimize negative).
+    """
+
+    def __init__(self, gamma: float, w0: float = 1.0, eps: float = 1e-12, use_ce: bool = True):
+        super().__init__()
+        if gamma <= 0:
+            raise ValueError("gamma must be > 0.")
+        self.gamma = float(gamma)
+        self.w0 = float(w0)
+        self.eps = float(eps)
+        self.use_ce = bool(use_ce)
+
+    def forward(self, pl: torch.Tensor) -> torch.Tensor:
+        # pl is shape (P,) or (P,1) depending on upstream; normalize to (P,)
+        w = pl.squeeze(-1) # the "pl" function is designed to account for the initial wealth if the criterion is CRRA
+ 
+        # log utility case
+        if abs(self.gamma - 1.0) < 1e-12:
+            #u = torch.log(w)...not used to avoid NaN if at least one component in w is not positive
+            u = torch.where(w > 0, torch.log(w), torch.full_like(w, -100000.0)) #huge penalty if wealth is negative
+            if self.use_ce:
+                return torch.exp(u.mean())  # CE = exp(E[log W])
+            else:
+                return u.mean() 
+        else:
+            one_minus_g = 1.0 - self.gamma
+            w_pow = torch.where(w>0, w.pow(one_minus_g), torch.full_like(w, -100000.0))
+            if self.use_ce:
+                # CE = (E[W^(1-gamma)])^(1/(1-gamma))
+                m = torch.clamp(w_pow.mean(), min=self.eps)
+                return m.pow(1.0 / one_minus_g)
+            else:
+                # Expected utility = E[ W^(1-gamma)/(1-gamma) ]
+                return (w_pow / one_minus_g).mean() 
