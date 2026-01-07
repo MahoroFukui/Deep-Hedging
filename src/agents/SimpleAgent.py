@@ -49,7 +49,7 @@ class SimpleAgent(Agent):
 
         P, t, N = paths.shape
 
-        last_prices = paths[:, -1, :] # (P, N)
+        last_prices = state[0][:, -1, :] # (P, N)
         # log prices
         log_prices = torch.log(last_prices) # (P, N)
 
