@@ -45,8 +45,8 @@ class SimpleAgent(Agent):
         :param state: tuple
         :return: torch.Tensor
         """
-        # only know the current price
-        paths, cash_account, positions, T = state
+    
+        paths, cash_account, positions, T, q_batch = state
         P, t, N = paths.shape
 
         last_prices = paths[:, -1, :] # (P, N)
@@ -55,6 +55,9 @@ class SimpleAgent(Agent):
 
         times = torch.ones(P, 1, device=self.device) * (T-t) # (P, 1)
         # features is log_prices and t
+
+        cash_account = cash_account
+        
         features = torch.cat([log_prices, times], dim=1) # (P, N+1)
 
         return features.to(self.device)
