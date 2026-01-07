@@ -177,7 +177,7 @@ class Agent(torch.nn.Module, ABC):
             cost = cost.squeeze(-1) if cost.dim() > 1 else cost
     
             need = spend + cost                              # if >0, we must have enough cash
-            scale = torch.ones_like(need)
+            scale = torch.ones_like(need) #create tensor of same shape but all 1s
             mask = need > 0
             scale[mask] = torch.clamp(cash_avail[mask] / (need[mask] + eps), max=1.0)
     
