@@ -69,14 +69,12 @@ class Agent(torch.nn.Module, ABC):
         # number of time steps
         P, T, N = hedge_paths.shape
 
-        action = torch.clamp(self.policy(state), -5, 5)
-
         cash_account = torch.zeros(P, T, device=self.device)
         portfolio_value = torch.zeros(P, T, device=self.device)
         positions = torch.zeros(P, T, N, device=self.device)
 
         state = hedge_paths[:,:1], cash_account[:,:1], positions[:,:1], T
-        action = self.policy(state)
+        action = torch.clamp(self.policy(state), -5, 5)
         positions[:, 0] = action
         cost_of_action = self.cost_function(action, state)
         purchase = (action * hedge_paths[:, 0]).sum(dim=-1)
