@@ -239,6 +239,7 @@ class Agent(torch.nn.Module, ABC):
             self.portfolio_logs["claim_payoff"] = claim_payoff.detach().cpu()
             delta = contingent_claim.delta(claim_path)
             self.portfolio_logs["claim_delta"] = delta
+            self.portfolio_logs["hedge_paths"] = hedge_paths.detach().cpu()
 
         return profit, wealth_path #changed from: profit, claim_payoff
 
