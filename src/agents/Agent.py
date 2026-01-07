@@ -162,7 +162,7 @@ class Agent(torch.nn.Module, ABC):
             St = hedge_paths[:, t]  # (P, N)
     
             # accrue interest on cash
-            cash_prev = cash_account[:, t-1] * (1.0 + self.step_interest_rate)
+            cash_prev = cash_account[:, t-1] * (1.0 + self.interest_rate)
     
             #state  = (hedge_paths[:, :t+1, :], cash_prev.unsqueeze(1), positions[:, :t, :], T)
             #dtheta = self.policy(state)  # trade increment (P, N)
