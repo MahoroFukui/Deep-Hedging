@@ -294,8 +294,8 @@ class Agent(torch.nn.Module, ABC):
             epoch_loss_sum = 0.0
             epoch_paths = 0
             batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
-            for start, current_batch in batch_iter:
-                pl, _ = self.pl(contingent_claim, current_batch, T, False)
+            for start, current_batch_size in batch_iter:
+                pl, _ = self.pl(contingent_claim, current_batch_size, T, False)
                 loss = - self.criterion(pl)
                 loss = self.crra_ruin_penalized_loss(
                     terminal_wealth=profit,        # or terminal_wealth if you want ruin relative to gross wealth
@@ -308,11 +308,11 @@ class Agent(torch.nn.Module, ABC):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                epoch_loss_sum += loss.item() * current_batch
-                epoch_paths += current_batch
+                epoch_loss_sum += loss.item() * current_batch_size
+                epoch_paths += current_batch_size
                 
                 if logging:
-                    self.training_logs["training_PL"][epoch, start:start + current_batch] = pl.detach().cpu()
+                    self.training_logs["training_PL"][epoch, start:start + current_batch_size] = pl.detach().cpu()
                     
             epoch_loss = epoch_loss_sum / max(epoch_paths, 1)
             losses.append(epoch_loss)
@@ -341,8 +341,8 @@ class Agent(torch.nn.Module, ABC):
             epoch_loss_sum = 0.0
             epoch_paths = 0
             batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
-            for start, current_batch in batch_iter:
-                profit, wealth_path = self.pl(contingent_claim, current_batch, T, False) 
+            for start, current_batch_size in batch_iter:
+                profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False) 
                 loss = self.crra_ruin_penalized_loss(
                     terminal_wealth=profit,        # or terminal_wealth if you want ruin relative to gross wealth
                     wealth_path=wealth_path,       # penalize min wealth along the hedge
@@ -354,11 +354,11 @@ class Agent(torch.nn.Module, ABC):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                epoch_loss_sum += loss.item() * current_batch
-                epoch_paths += current_batch
+                epoch_loss_sum += loss.item() * current_batch_size
+                epoch_paths += current_batch_size
                 
                 if logging:
-                    self.training_logs["training_PL"][epoch, start:start + current_batch] = pl.detach().cpu()
+                    self.training_logs["training_PL"][epoch, start:start + current_batch_size] = profit.detach().cpu()
                     
             epoch_loss = epoch_loss_sum / max(epoch_paths, 1)
             losses.append(epoch_loss)
