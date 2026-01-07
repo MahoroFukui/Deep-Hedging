@@ -21,6 +21,9 @@ class RecurrentAgent(SimpleAgent):
         current_positions = state[2][:, -1] # (P, N)
         q_batch = state[4]
 
-        features = torch.cat([simple_features, current_cash_account, current_positions, q_batch], dim=1) # (P, 3N+2)
+        if q_batch is None:
+            features = torch.cat([simple_features, current_cash_account, current_positions], dim=1) 
+        else:
+            features = torch.cat([simple_features, current_cash_account, current_positions, q_batch], dim=1) # (P, 3N+2)
 
         return features.to(self.device)
