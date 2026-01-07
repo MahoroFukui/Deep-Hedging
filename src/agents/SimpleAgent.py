@@ -45,7 +45,6 @@ class SimpleAgent(Agent):
         :param state: tuple
         :return: torch.Tensor
         """
-    
         paths, cash_account, positions, T, q_batch = state
         P, t, N = paths.shape
 
@@ -56,8 +55,6 @@ class SimpleAgent(Agent):
         times = torch.ones(P, 1, device=self.device) * (T-t) # (P, 1)
         # features is log_prices and t
 
-        cash_account = cash_account
-        
         features = torch.cat([log_prices, times], dim=1) # (P, N+1)
 
         return features.to(self.device)
