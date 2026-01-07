@@ -17,9 +17,8 @@ class RecurrentAgent(SimpleAgent):
 
         simple_features = super().feature_transform(state) # (P, N+1)
 
+        cash_account = 
         current_positions = state[2][:, -1] # (P, N)
-
-        # add the current positions to the features
 
         features = torch.cat([simple_features, current_positions], dim=1) # (P, 2N+1)
 
