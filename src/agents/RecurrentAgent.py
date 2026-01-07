@@ -7,7 +7,7 @@ from agents.SimpleAgent import SimpleAgent
 class RecurrentAgent(SimpleAgent):
 
     def input_dim(self) -> int:
-        return super().input_dim() + self.2N+1
+        return super().input_dim() + self.2N + 1
 
     def feature_transform(self, state: tuple) -> torch.Tensor:
         """
