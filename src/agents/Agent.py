@@ -8,7 +8,6 @@ from tqdm import tqdm
 from instruments.Instruments import Instrument
 import matplotlib.pyplot as plt
 import seaborn as sns
-from RiskMeasures import CRRA
 
 
 class Agent(torch.nn.Module, ABC):
