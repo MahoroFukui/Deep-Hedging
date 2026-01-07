@@ -214,10 +214,10 @@ class Agent(torch.nn.Module, ABC):
         hedge_paths, claim_path = self.generate_paths(P, T, contingent_claim) # P x T x N, P x 1
         claim_payoff = contingent_claim.payoff(claim_path).to(self.device) # P x 1
 
-        if isinstance(self.criterion, CRRA):
-            portfolio_value = self.compute_portfolio_if_CRRA(hedge_paths, logging=False, initial_wealth=1.0)
-        else:
-            portfolio_value = self.compute_portfolio(hedge_paths, logging)
+        #if isinstance(self.criterion, CRRA):
+        portfolio_value = self.compute_portfolio_if_CRRA(hedge_paths, logging=False, initial_wealth=1.0)
+        #else:
+            #portfolio_value = self.compute_portfolio(hedge_paths, logging)
     
         profit = portfolio_value - claim_payoff # P
         
