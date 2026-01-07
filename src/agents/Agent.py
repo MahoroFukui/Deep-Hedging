@@ -113,7 +113,7 @@ class Agent(torch.nn.Module, ABC):
 
         return portfolio_value[:,-1] + cash_account[:,-1]
 
-    def compute_portfolio_if_CRRA(self, hedge_paths, logging=True, initial_wealth: float = 1.0, q: float) -> torch.Tensor:
+    def compute_portfolio_if_CRRA(self, hedge_paths, logging=True, initial_wealth: float = 1.0, q: float = 0.5) -> torch.Tensor:
         if hedge_paths.dim() == 2:
             hedge_paths = hedge_paths.unsqueeze(-1)
         P, T, N = hedge_paths.shape #reminder: N is number of hedging instrument. If it's just underlying stock, N=1.
