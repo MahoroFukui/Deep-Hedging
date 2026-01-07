@@ -126,6 +126,7 @@ class Agent(torch.nn.Module, ABC):
     
         # ---------- t = 0 ----------
         S0 = hedge_paths[:, 0]  # (P, N)
+        cash0 = torch.full((P,), float(initial_wealth), device=device)
         cash_account[:, 0] = cash0  # put initial wealth into the history tensor
 
         state0 = (hedge_paths[:, :1], cash_account[:, :1], positions[:, :1], T)  # same convention
