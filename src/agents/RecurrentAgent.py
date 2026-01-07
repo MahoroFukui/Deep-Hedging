@@ -18,6 +18,7 @@ class RecurrentAgent(SimpleAgent):
         simple_features = super().feature_transform(state) # (P, N+1)
 
         P, t, N = state[0].shape
+        T = state[3]
 
         times = torch.ones(P, 1, device=self.device) * (T-t) # (P, 1)
 
