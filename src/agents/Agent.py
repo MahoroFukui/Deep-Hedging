@@ -69,6 +69,8 @@ class Agent(torch.nn.Module, ABC):
         # number of time steps
         P, T, N = hedge_paths.shape
 
+        action = torch.clamp(self.policy(state), -action_cap, action_cap)
+
         cash_account = torch.zeros(P, T, device=self.device)
         portfolio_value = torch.zeros(P, T, device=self.device)
         positions = torch.zeros(P, T, N, device=self.device)
