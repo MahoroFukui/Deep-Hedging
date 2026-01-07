@@ -199,7 +199,7 @@ class Agent(torch.nn.Module, ABC):
         with torch.no_grad():
             self.eval()
             profit, claim_payoff = self.pl(contingent_claim, paths, T, True)
-            loss = self.criterion(profit)
+            loss = -self.criterion(profit)
             if logging:
                 self.validation_logs["validation_profit"] = profit.detach().cpu()
                 self.validation_logs["validation_claim_payoff"] = claim_payoff.detach().cpu()
