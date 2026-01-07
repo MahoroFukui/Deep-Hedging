@@ -279,7 +279,7 @@ class Agent(torch.nn.Module, ABC):
     
         return base_loss + lambda_ruin * penalty
 
-    def fit(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True):
+    def fit(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True, q: float = 0.0):
         # non-CRRA case
         """
         :param contingent_claim: Instrument
@@ -298,7 +298,7 @@ class Agent(torch.nn.Module, ABC):
             epoch_paths = 0
             batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
             for start, current_batch_size in batch_iter:
-                pl, _ = self.pl(contingent_claim, current_batch_size, T, False)
+                pl, _ = self.pl(contingent_claim, current_batch_size, T, False, q)
                 loss = - self.criterion(pl)
                 loss = self.crra_ruin_penalized_loss(
                     terminal_wealth=profit,        # or terminal_wealth if you want ruin relative to gross wealth
@@ -327,7 +327,7 @@ class Agent(torch.nn.Module, ABC):
 
         return losses
         
-    def fit_CRRA(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True, q: float =0.0):
+    def fit_CRRA(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True, q: float = 0.0):
         """
         :param contingent_claim: Instrument
         :param epochs: int
@@ -345,7 +345,7 @@ class Agent(torch.nn.Module, ABC):
             epoch_paths = 0
             batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
             for start, current_batch_size in batch_iter:
-                profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False) 
+                profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False, q) 
                 loss = self.crra_ruin_penalized_loss(
                     terminal_wealth=profit,        # or terminal_wealth if you want ruin relative to gross wealth
                     wealth_path=wealth_path,       # penalize min wealth along the hedge
@@ -372,21 +372,30 @@ class Agent(torch.nn.Module, ABC):
             self.training_logs["training_losses"] = torch.Tensor(losses).cpu()
 
         return losses
+        
+    def q_range_penalty(q: torch.Tensor, q_min: float, q_max: float, tau: float = 1e-3, power: int = 2):
+        """
+        Smooth penalty = softplus((q_min - q)/tau)^power + softplus((q - q_max)/tau)^power
+        Zero-ish inside [q_min, q_max], grows smoothly outside.
+        """
+        low  = F.softplus((q_min - q) / tau)
+        high = F.softplus((q - q_max) / tau)
+        return (low**power + high**power)
 
-    def fit_CRRA_option_price(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True, baseline_EU_mean: int):
+    def fit_CRRA_option_price(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True, 
+                              q=0.5, alpha: float = 0.5, beta: float = 0.5, baseline_EU_mean = baseline_EU_mean, p_norm = 2, q_min: float, 
+                              q_max: float):
         for epoch in range(epochs):
             self.train()
             batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
             for start, current_batch_size in batch_iter:
-                profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False) 
-                loss = self.crra_ruin_penalized_loss(
-                    terminal_wealth=profit,        # or terminal_wealth if you want ruin relative to gross wealth
-                    wealth_path=wealth_path,       # penalize min wealth along the hedge
-                    lambda_ruin=50.0,
-                    tau=1e-2,
-                    p=2
-                )
-
+                profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False, q) 
+                
+                loss_before_other_penalties = self.crra_ruin_penalized_loss(terminal_wealth=profit, wealth_path=wealth_path,lambda_ruin=50.0, tau=1e-2, p=2)
+                penalty_q = q_range_penalty(q, q_min=q_min, q_max=q_max)
+                penalty_match = torch.abs(EU - baseline_EU_mean) ** p_norm
+                loss = loss_before_other_penalties + alpha * penalty_q + beta * penalty_match
+                
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
