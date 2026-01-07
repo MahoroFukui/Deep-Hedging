@@ -126,7 +126,7 @@ class Agent(torch.nn.Module, ABC):
         S0 = hedge_paths[:, 0]  # (P, N)
         cash0 = torch.full((P,), float(initial_wealth), device=device)
     
-        state0 = (S0, cash0, positions[:, 0], T)
+        state0 = (hedge_paths[:, :1, :], cash0.unsqueeze(1), positions[:, :1, :], T)
         dtheta0 = self.policy(state0)  # trade increment (P, N)
     
         # Optional: clamp trade increment (not required for self-financing, but stabilizes training)
@@ -156,7 +156,7 @@ class Agent(torch.nn.Module, ABC):
             # accrue interest on cash
             cash_prev = cash_account[:, t-1] * (1.0 + self.step_interest_rate)
     
-            state = (St, cash_prev, positions[:, t-1], T)
+            state  = (hedge_paths[:, :t+1, :], cash_prev.unsqueeze(1), positions[:, :t, :], T)
             dtheta = self.policy(state)  # trade increment (P, N)
     
             # Optional stabilization clamp on increment
