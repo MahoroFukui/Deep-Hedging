@@ -45,13 +45,8 @@ class SimpleAgent(Agent):
         :param state: tuple
         :return: torch.Tensor
         """
-        #paths, cash_account, positions, T, = state  outdated
+        paths, cash_account, positions, T, q_batch = state
 
-        if len(state) == 4:
-            paths, cash_account, positions, T = state
-            q_batch = None
-        else:
-            paths, cash_account, positions, T, q_batch = state
         P, t, N = paths.shape
 
         last_prices = paths[:, -1, :] # (P, N)
