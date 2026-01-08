@@ -22,7 +22,7 @@ class RecurrentAgent(SimpleAgent):
         current_positions = state[2][:, -1] # (P, N)
         #q_batch = state[4][:, -1]
 
-        features = torch.cat([simple_features, current_positions], dim=1) # (P, 3N+2)
+        features = torch.cat([simple_features, current_positions, current_positions, current_positions], dim=1) # (P, 3N+2)
         
         #outdated: features = torch.cat([simple_features, current_positions], dim=1)
         
