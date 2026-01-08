@@ -252,7 +252,7 @@ class Agent(torch.nn.Module, ABC):
         self,
         terminal_wealth: torch.Tensor,      # shape: (P,) or (P,1)
         wealth_path: torch.Tensor,          # shape: (P,T)
-        lambda_ruin: float = 50.0,
+        lambda_ruin: float = 5.0,
         tau: float = 1e-2,
         p: int = 2,
         eps: float = 1e-12,
