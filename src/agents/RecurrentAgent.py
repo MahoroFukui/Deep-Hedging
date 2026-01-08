@@ -9,7 +9,7 @@ class RecurrentAgent(SimpleAgent):
     def input_dim(self) -> int:
         return super().input_dim() + 2 * self.N + 1
 
-    def feature_transform(self, state: tuple, q=0.5) -> torch.Tensor:
+    def feature_transform(self, state: tuple) -> torch.Tensor:
         """
         :param state: tuple
         :return: torch.Tensor
@@ -21,7 +21,8 @@ class RecurrentAgent(SimpleAgent):
         P, t, N = paths.shape
         
         current_cash_account = state[1][:, -1].unsqueeze(-1)
-        q_batch = torch.full((P, 1), float(q), device=self.device, dtype=simple_features.dtype)
+        #outdated: q_batch = torch.full((P, 1), float(self.q), device=self.device, dtype=simple_features.dtype)
+        q_batch = self.q.expand(P, 1)
         
         current_positions = state[2][:, -1] # (P, N)
         
