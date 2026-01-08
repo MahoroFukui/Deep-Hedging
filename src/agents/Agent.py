@@ -73,6 +73,7 @@ class Agent(torch.nn.Module, ABC):
         cash_account = torch.zeros(P, T, device=self.device)
         portfolio_value = torch.zeros(P, T, device=self.device)
         positions = torch.zeros(P, T, N, device=self.device)
+        q_batch = torch.zeros(P, T, device=self.device)
 
         #if q != 0:
             #q_batch = q * torch.ones(P, T, device=self.device)
@@ -128,6 +129,7 @@ class Agent(torch.nn.Module, ABC):
         cash_account = torch.zeros(P, T, device=device) 
         portfolio_value = torch.zeros(P, T, device=device)
         positions = torch.zeros(P, T, N, device=device)
+        q_batch = torch.zeros(P, T, device=self.device)
         
         # ---------- t = 0 ----------
         S0 = hedge_paths[:, 0]  # (P, N)
