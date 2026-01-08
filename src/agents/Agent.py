@@ -255,7 +255,7 @@ class Agent(torch.nn.Module, ABC):
         lambda_ruin: float = 1e-23,
         tau: float = 1e-2,
         p: int = 1,
-        eps: float = 1e-3,
+        eps: float = 1e-2,
     ) -> torch.Tensor:
         """
         Loss = -E[ CRRA(W_T) ] + lambda * E[ softplus(-min_t W_t / tau)*tau ]^p
