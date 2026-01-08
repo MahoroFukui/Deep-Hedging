@@ -34,10 +34,10 @@ class SimpleAgent(Agent):
         ])
         ).to(self.device)
         if optimizer.lower() == "sgd":
-            self.optimizer = torch.optim.SGD(self.network.parameters() + [self.q], lr=lr)
-        else:
-            self.optimizer = torch.optim.Adam(self.network.parameters() + [self.q], lr=lr)
+            self.optimizer = torch.optim.SGD(list(self.network.parameters()) + [self.q], lr=lr)
 
+        else:
+            self.optimizer = torch.optim.Adam(list(self.network.parameters()) + [self.q], lr=lr)
 
     def input_dim(self) -> int:
         return self.N + 1
