@@ -17,14 +17,20 @@ class RecurrentAgent(SimpleAgent):
 
         simple_features = super().feature_transform(state) # (P, N+1)
 
-        if
-        current_cash_account = state[1][:, -1]
-        q_batch = state[4][:, -1]
+        paths, cash_account, positions, T, q_batch = state
+        P, t, N = paths.shape
+        
+        if t==0:
+            current_cash_account = state[1]
+            q_batch = state[4]
+        else:
+            current_cash_account = state[1][:, -1]
+            q_batch = state[4][:, -1]
         
         current_positions = state[2][:, -1] # (P, N)
         
 
-        features = torch.cat([simple_features, current_cash_account, current_positions, current_positions], dim=1) # (P, 3N+2)
+        features = torch.cat([simple_features, current_cash_account, current_positions, q_batch], dim=1) # (P, 3N+2)
         
         #outdated: features = torch.cat([simple_features, current_positions], dim=1)
         
