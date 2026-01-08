@@ -14,7 +14,17 @@ class RecurrentAgent(SimpleAgent):
         :param state: tuple
         :return: torch.Tensor
         """
-
+        paths, cash_account, positions, T, q_batch = state
+        device = paths.device  # safest source of truth
+        dtype = paths.dtype
+    
+        # Move state tensors to the same device
+        paths = paths.to(device)
+        cash_account = cash_account.to(device)
+        positions = positions.to(device)
+    
+        # Rebuild state in-case super() relies on it
+        state = (paths, cash_account, positions, T, q_batch)
         simple_features = super().feature_transform(state) # (P, N+1)
 
         paths, cash_account, positions, T, q_batch = state
