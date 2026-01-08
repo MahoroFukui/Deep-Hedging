@@ -74,10 +74,10 @@ class Agent(torch.nn.Module, ABC):
         portfolio_value = torch.zeros(P, T, device=self.device)
         positions = torch.zeros(P, T, N, device=self.device)
 
-        if q != 0:
-            q_batch = q * torch.ones(P, T, device=self.device)
-        else:
-            q_batch = torch.zeros(P, T, device=self.device)
+        #if q != 0:
+            #q_batch = q * torch.ones(P, T, device=self.device)
+        #else:
+            #q_batch = torch.zeros(P, T, device=self.device)
         
         state = hedge_paths[:,:1], cash_account[:,:1], positions[:,:1], T, q_batch
         action = self.policy(state)
@@ -134,10 +134,10 @@ class Agent(torch.nn.Module, ABC):
         cash0 = torch.full((P,), float(initial_wealth + q), device=device)
         cash_account[:, 0] = cash0  # put initial wealth into the history tensor
 
-        if q != 0:
-            q_batch = q * torch.ones(P, T, device=self.device)
-        else:
-            q_batch = torch.zeros(P, T, device=self.device)
+        #if q != 0:
+            #q_batch = q * torch.ones(P, T, device=self.device)
+        #else:
+            #q_batch = torch.zeros(P, T, device=self.device)
         
         state0 = (hedge_paths[:, :1], cash_account[:, :1], positions[:, :1], T, q_batch)  # same convention
         dtheta0 = self.policy(state0)
