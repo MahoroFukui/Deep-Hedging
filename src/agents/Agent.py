@@ -389,7 +389,8 @@ class Agent(torch.nn.Module, ABC):
             for start, current_batch_size in batch_iter:
                 profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False, self.q)
                 EU_with_liability = self.criterion(profit)
-                loss_before_other_penalties = self.crra_ruin_penalized_loss(terminal_wealth=profit, wealth_path=wealth_path,lambda_ruin=50.0, tau=1e-2, p=2)
+                loss_before_other_penalties = self.crra_ruin_penalized_loss(
+                    terminal_wealth=profit, wealth_path=wealth_path,lambda_ruin=50.0, tau=1e-2, p=1)
                 low  = F.softplus((q_min - self.q) / 1e-2)
                 high = F.softplus((self.q - q_max) / 1e-2)
                 penalty_q = low**2 + high**2
