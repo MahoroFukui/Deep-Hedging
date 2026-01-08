@@ -382,6 +382,8 @@ class Agent(torch.nn.Module, ABC):
         
         for epoch in range(epochs):
             self.train()
+            epoch_loss_sum = 0.0
+            epoch_paths = 0
             batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
             for start, current_batch_size in batch_iter:
                 profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False, self.q)
