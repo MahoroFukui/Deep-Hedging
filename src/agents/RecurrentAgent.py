@@ -15,13 +15,6 @@ class RecurrentAgent(SimpleAgent):
         :return: torch.Tensor
         """
         paths, cash_account, positions, T, q_batch = state
-        device = paths.device  # safest source of truth
-        dtype = paths.dtype
-    
-        # Move state tensors to the same device
-        paths = paths.to(device)
-        cash_account = cash_account.to(device)
-        positions = positions.to(device)
     
         # Rebuild state in-case super() relies on it
         state = (paths, cash_account, positions, T, q_batch)
@@ -35,8 +28,14 @@ class RecurrentAgent(SimpleAgent):
         q_batch = self.q.expand(P, 1)
         
         current_positions = state[2][:, -1] # (P, N)
-        
 
+        device = paths.device  # or self.q.device
+
+        simple_features       = simple_features.to(device)
+        current_cash_account  = current_cash_account.to(device)
+        current_positions     = current_positions.to(device)
+        q_batch               = q_batch.to(device)
+        
         features = torch.cat([simple_features, current_cash_account, current_positions, q_batch], dim=1) # (P, 3N+2)
         
         #outdated: features = torch.cat([simple_features, current_positions], dim=1)
