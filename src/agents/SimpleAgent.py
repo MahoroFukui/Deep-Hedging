@@ -16,7 +16,10 @@ class SimpleAgent(Agent):
                  lr=0.005,
                  pref_gpu=True,
                  h_dim=15,
+                 q=0.5,
                  optimizer: str = "adam",):
+
+        self.q = torch.nn.Parameter(torch.tensor(q, dtype=torch.float32, device=self.device)
 
         self.N = len(hedging_instruments)
         network_input_dim = self.input_dim()
@@ -32,9 +35,9 @@ class SimpleAgent(Agent):
         ])
         ).to(self.device)
         if optimizer.lower() == "sgd":
-            self.optimizer = torch.optim.SGD(self.network.parameters(), lr=lr)
+            self.optimizer = torch.optim.SGD(self.network.parameters() + [self.q], lr=lr)
         else:
-            self.optimizer = torch.optim.Adam(self.network.parameters(), lr=lr)
+            self.optimizer = torch.optim.Adam(self.network.parameters() + [self.q], lr=lr)
 
 
     def input_dim(self) -> int:
