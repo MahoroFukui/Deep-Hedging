@@ -19,7 +19,7 @@ class SimpleAgent(Agent):
                  q=0.5,
                  optimizer: str = "adam",):
 
-        self.q = torch.nn.Parameter(torch.tensor(q, dtype=torch.float32, device=self.device))
+        self.q = torch.nn.Parameter(torch.tensor(q, dtype=torch.float32))
                      
 
         self.N = len(hedging_instruments)
