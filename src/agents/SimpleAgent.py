@@ -37,7 +37,7 @@ class SimpleAgent(Agent):
         q_params = [self.q]     
 
         lr_policy=1e-4
-        lr_q=5e-6
+        lr_q=5e-3
         
         if optimizer.lower() == "sgd":
             self.optimizer = torch.optim.SGD([
