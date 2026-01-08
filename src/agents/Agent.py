@@ -378,6 +378,7 @@ class Agent(torch.nn.Module, ABC):
         return (low**power + high**power)
 
     def fit_CRRA_option_price(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True, alpha: float = 0.5, beta: float = 0.5, baseline_EU_mean = -0.01, p_norm = 2, q_min = 0.0, q_max = 1.0):
+        losses = []
         q_history = []
         
         for epoch in range(epochs):
