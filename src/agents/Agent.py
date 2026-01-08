@@ -377,7 +377,7 @@ class Agent(torch.nn.Module, ABC):
         high = F.softplus((q - q_max) / tau)
         return (low**power + high**power)
 
-    def fit_CRRA_option_price(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True, alpha=alpha, beta=beta, baseline_EU_mean = baseline_EU_mean, p_norm = p_norm, q_min = 0.0, q_max = 1.0):
+    def fit_CRRA_option_price(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = False, T = 365, logging = True, alpha=None, beta=None, baseline_EU_mean = None, p_norm = None, q_min = 0.0, q_max = 1.0):
         losses = []
         q_history = []
         
