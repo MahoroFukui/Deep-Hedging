@@ -252,7 +252,7 @@ class Agent(torch.nn.Module, ABC):
         self,
         terminal_wealth: torch.Tensor,      # shape: (P,) or (P,1)
         wealth_path: torch.Tensor,          # shape: (P,T)
-        lambda_ruin: float = 1e2,
+        lambda_ruin: float = 1e3,
         tau: float = 1e-2,
         p: int = 2,
         eps: float = 1e-2,
@@ -344,7 +344,7 @@ class Agent(torch.nn.Module, ABC):
                 loss = self.crra_ruin_penalized_loss(
                     terminal_wealth=profit,        # or terminal_wealth if you want ruin relative to gross wealth
                     wealth_path=wealth_path,       # penalize min wealth along the hedge
-                    lambda_ruin=1e2,
+                    lambda_ruin=1e3,
                     tau=1e-2,
                     p=2
                 )
@@ -390,7 +390,7 @@ class Agent(torch.nn.Module, ABC):
                 profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False, self.q)
                 EU_with_liability = self.criterion(profit)
                 loss_before_other_penalties = self.crra_ruin_penalized_loss(
-                    terminal_wealth=profit, wealth_path=wealth_path,lambda_ruin=1e2, tau=1e-2, p=2)
+                    terminal_wealth=profit, wealth_path=wealth_path,lambda_ruin=1e3, tau=1e-2, p=2)
                 low  = F.softplus((q_min - self.q) / 1e-1)
                 high = F.softplus((self.q - q_max) / 1e-1)
                 penalty_q = low**2 + high**2
