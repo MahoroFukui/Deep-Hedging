@@ -22,10 +22,9 @@ class RecurrentAgent(SimpleAgent):
         
         if t==0:
             current_cash_account = state[1]
-            q_batch = state[4]
         else:
             current_cash_account = state[1][:, -1]
-            q_batch = state[4][:, -1]
+        q_batch = state[4][:, -1]
         
         current_positions = state[2][:, -1] # (P, N)
         
