@@ -386,7 +386,7 @@ class Agent(torch.nn.Module, ABC):
                 profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False, self.q)
                 EU_with_liability = self.criterion(profit)
                 loss_before_other_penalties = self.crra_ruin_penalized_loss(terminal_wealth=profit, wealth_path=wealth_path,lambda_ruin=50.0, tau=1e-2, p=2)
-                penalty_q = q_range_penalty(self.q, q_min=q_min, q_max=q_max)
+                penalty_q = self.q_range_penalty(self.q, q_min=q_min, q_max=q_max)
                 penalty_match = torch.abs(EU_with_liability - baseline_EU_mean) ** p_norm
                 loss = loss_before_other_penalties + alpha * penalty_q + beta * penalty_match
                 self.optimizer.zero_grad()
