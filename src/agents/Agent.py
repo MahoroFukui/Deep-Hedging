@@ -8,6 +8,7 @@ from tqdm import tqdm
 from instruments.Instruments import Instrument
 import matplotlib.pyplot as plt
 import seaborn as sns
+import torch.nn.functional as F
 
 
 class Agent(torch.nn.Module, ABC):
