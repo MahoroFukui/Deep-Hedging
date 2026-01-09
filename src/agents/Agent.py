@@ -137,11 +137,12 @@ class Agent(torch.nn.Module, ABC):
         S0 = hedge_paths[:, 0]  # (P, N)
         if self.liability==True:
             #outdated: cash0 = torch.full((P,), float(initial_wealth + self.q), device=device) #adding option premium
-            cash0 = torch.full((P,), initial_wealth, device=device) + self.q
+            cash0 = torch.full((P,), initial_wealth / 2, device=device) + self.q
         else:
-            cash0 = torch.full((P,), initial_wealth, device=device)
+            cash0 = torch.full((P,), initial_wealth / 2, device=device)
             
         cash_account[:, 0] = cash0  # put initial wealth into the history tensor
+        positions[:, 0] = initial_wealth / (2 * S0)
 
         #if q != 0:
             #q_batch = q * torch.ones(P, T, device=self.device)
