@@ -315,7 +315,7 @@ class Agent(torch.nn.Module, ABC):
             epoch_loss = epoch_loss_sum / max(epoch_paths, 1)
             losses.append(epoch_loss)
             if verbose:
-                print(f"Epoch: {epoch}, Loss: {epoch_loss: .2f}")
+                print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}")
 
         if logging:
             self.training_logs["training_losses"] = torch.Tensor(losses).cpu()
@@ -361,22 +361,13 @@ class Agent(torch.nn.Module, ABC):
             epoch_loss = epoch_loss_sum / max(epoch_paths, 1)
             losses.append(epoch_loss)
             if verbose:
-                print(f"Epoch: {epoch}, Loss: {epoch_loss: .2f}")
+                print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}")
 
         if logging:
             self.training_logs["training_losses"] = torch.Tensor(losses).cpu()
 
         return losses
         
-    def q_range_penalty(q: torch.Tensor, q_min: float, q_max: float, tau: float = 1e-3, power: int = 2):
-        """
-        Smooth penalty = softplus((q_min - q)/tau)^power + softplus((q - q_max)/tau)^power
-        Zero-ish inside [q_min, q_max], grows smoothly outside.
-        """
-        low  = F.softplus((q_min - q) / tau)
-        high = F.softplus((q - q_max) / tau)
-        return (low**power + high**power)
-
     def fit_CRRA_option_price(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = True, T = 365, logging = True, alpha=None, beta=None, baseline_EU_mean = None, p_norm = None, q_min = 0.0, q_max = 1.0):
         losses = []
         q_history = []
@@ -395,7 +386,7 @@ class Agent(torch.nn.Module, ABC):
                 high = F.softplus((self.q - q_max) / 1e-1)
                 penalty_q = low**2 + high**2
                 penalty_match = torch.abs(EU_with_liability - baseline_EU_mean) ** p_norm
-                loss = alpha * penalty_q + beta * penalty_match
+                loss = loss_before_other_penalties + alpha * penalty_q + beta * penalty_match
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
@@ -406,10 +397,13 @@ class Agent(torch.nn.Module, ABC):
             losses.append(epoch_loss)
             q_history.append(self.q.detach().item())
 
+        if verbose:
+                print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}")
+
         return losses, q_history
 
 
-    def validate(self, contingent_claim: Claim, paths = int(1e6), T = 365, logging = True):
+    def validate(self, contingent_claim: Claim, paths = int(1e4), T = 365, logging = True):
         """
         :param contingent_claim: Instrument
         :param epochs: int
