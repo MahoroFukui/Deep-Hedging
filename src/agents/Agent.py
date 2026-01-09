@@ -393,7 +393,7 @@ class Agent(torch.nn.Module, ABC):
                 penalty_q = low**2 + high**2
                 penalty_match = torch.abs(EU_with_liability - baseline_EU_mean) ** p_norm
                 if epoch < 20:
-                    loss = alpha * loss_before_other_penalties + beta1 * penalty_q
+                    loss = alpha * loss_before_other_penalties
                 else:
                     loss = alpha * loss_before_other_penalties + beta1 * penalty_q + beta2 * penalty_match
                 self.optimizer.zero_grad()
