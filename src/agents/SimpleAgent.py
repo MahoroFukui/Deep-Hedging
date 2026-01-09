@@ -13,7 +13,6 @@ class SimpleAgent(Agent):
                  cost_function: CostFunction,
                  hedging_instruments: List[Instrument],
                  interest_rate,
-                 lr=0.005,
                  pref_gpu=True,
                  h_dim=15,
                  q=0.5,
