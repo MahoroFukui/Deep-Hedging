@@ -16,7 +16,8 @@ class SimpleAgent(Agent):
                  pref_gpu=True,
                  h_dim=15,
                  q=0.5,
-                 optimizer: str = "adam",):
+                 optimizer: str = "adam",
+                 liability: bool = True):
 
         self.N = len(hedging_instruments)
         network_input_dim = self.input_dim()
