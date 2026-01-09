@@ -404,7 +404,8 @@ class Agent(torch.nn.Module, ABC):
             q_history.append(self.q.detach().item())
             
             if verbose:
-                print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}")
+                print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f},
+                EU diff: {EU_with_liability - baseline_EU_mean: .5f}, option price: {self.q: .5f}")
 
         return losses, q_history
 
