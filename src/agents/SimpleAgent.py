@@ -14,7 +14,6 @@ class SimpleAgent(Agent):
                  hedging_instruments: List[Instrument],
                  interest_rate,
                  pref_gpu=True,
-                 h_dim=15,
                  q=0.5,
                  optimizer: str = "adam",
                  liability: bool = True):
@@ -22,7 +21,7 @@ class SimpleAgent(Agent):
         self.N = len(hedging_instruments)
         network_input_dim = self.input_dim()
 
-        super().__init__(criterion, cost_function, hedging_instruments, interest_rate, h_dim, pref_gpu, liability)
+        super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability)
         self.q = torch.nn.Parameter(torch.tensor(q, dtype=torch.float32))
         self.network = torch.nn.Sequential(
         OrderedDict([
