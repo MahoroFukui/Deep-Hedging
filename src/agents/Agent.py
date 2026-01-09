@@ -398,7 +398,7 @@ class Agent(torch.nn.Module, ABC):
             q_history.append(self.q.detach().item())
 
         if verbose:
-                print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}")
+            print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}")
 
         return losses, q_history
 
