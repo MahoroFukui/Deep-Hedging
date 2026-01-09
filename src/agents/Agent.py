@@ -126,6 +126,7 @@ class Agent(torch.nn.Module, ABC):
         P, T, N = hedge_paths.shape #reminder: N is number of hedging instrument. If it's just underlying stock, N=1.
         device = self.device
         eps = 1e-12
+        initial_wealth = self.initial_wealth
     
         cash_account = torch.zeros(P, T, device=device) 
         portfolio_value = torch.zeros(P, T, device=device)
@@ -138,7 +139,7 @@ class Agent(torch.nn.Module, ABC):
             #outdated: cash0 = torch.full((P,), float(initial_wealth + self.q), device=device) #adding option premium
             cash0 = torch.full((P,), initial_wealth, device=device) + self.q
         else:
-            cash0 = torch.full((P,), float(initial_wealth), device=device)
+            cash0 = torch.full((P,), initial_wealth, device=device)
         cash_account[:, 0] = cash0  # put initial wealth into the history tensor
 
         #if q != 0:
