@@ -42,7 +42,7 @@ class SimpleAgent(Agent):
         if optimizer.lower() == "sgd":
             self.optimizer = torch.optim.SGD([
                 {"params": policy_params, "lr": lr_policy},
-                {"params": q_params,      "lr": lr_q},], betas=(0.9, 0.999))
+                {"params": q_params,      "lr": lr_q},])
         else:
             self.optimizer = torch.optim.Adam([
                 {"params": policy_params, "lr": lr_policy},
