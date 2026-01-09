@@ -21,7 +21,7 @@ class SimpleAgent(Agent):
         self.N = len(hedging_instruments)
         network_input_dim = self.input_dim()
 
-        super().__init__(criterion, cost_function, hedging_instruments, interest_rate, lr, pref_gpu)
+        super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu)
         self.q = torch.nn.Parameter(torch.tensor(q, dtype=torch.float32))
         self.network = torch.nn.Sequential(
         OrderedDict([
