@@ -368,7 +368,7 @@ class Agent(torch.nn.Module, ABC):
 
         return losses
         
-    def fit_CRRA_option_price(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = True, T = 365, logging = True, alpha=None, beta=None, baseline_EU_mean = None, p_norm = None, q_min = 0.0, q_max = 1.0):
+    def fit_CRRA_option_price(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = True, T = 365, logging = True, alpha=None, beta1=None, beta2=None, baseline_EU_mean = None, p_norm = None, q_min = 0.0, q_max = 1.0):
         losses = []
         q_history = []
         
@@ -386,7 +386,7 @@ class Agent(torch.nn.Module, ABC):
                 high = F.softplus((self.q - q_max) / 1e-1)
                 penalty_q = low**2 + high**2
                 penalty_match = torch.abs(EU_with_liability - baseline_EU_mean) ** p_norm
-                loss = loss_before_other_penalties + alpha * penalty_q + beta * penalty_match
+                loss = alpha * loss_before_other_penalties + beta1 * penalty_q + beta2 * penalty_match
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
