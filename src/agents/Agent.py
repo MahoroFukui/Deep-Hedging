@@ -139,7 +139,7 @@ class Agent(torch.nn.Module, ABC):
             #outdated: cash0 = torch.full((P,), float(initial_wealth + self.q), device=device) #adding option premium
             cash0 = torch.full((P,), initial_wealth, device=device) + self.q
         else:
-            cash0 = torch.full((P,), 1, device=device)
+            cash0 = torch.full((P,), 10, device=device)
             
         cash_account[:, 0] = cash0  # put initial wealth into the history tensor
 
