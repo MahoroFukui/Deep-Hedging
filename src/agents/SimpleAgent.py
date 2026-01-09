@@ -16,7 +16,7 @@ class SimpleAgent(Agent):
                  pref_gpu=True,
                  q=0.5,
                  h_dim=15,
-                 optimizer: "sgd",
+                 optimizer: str = "sgd",
                  liability: bool = True):
 
         self.N = len(hedging_instruments)
