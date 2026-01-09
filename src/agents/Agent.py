@@ -392,7 +392,10 @@ class Agent(torch.nn.Module, ABC):
                 high = F.softplus((self.q - q_max) / 1e-1)
                 penalty_q = low**2 + high**2
                 penalty_match = torch.abs(EU_with_liability - baseline_EU_mean) ** p_norm
-                loss = alpha * loss_before_other_penalties + beta1 * penalty_q + beta2 * penalty_match
+                if epoch < 2:
+                    loss = alpha * loss_before_other_penalties + beta1 * penalty_q
+                else:
+                    loss = alpha * loss_before_other_penalties + beta1 * penalty_q + beta2 * penalty_match
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
