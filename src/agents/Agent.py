@@ -396,9 +396,9 @@ class Agent(torch.nn.Module, ABC):
             epoch_loss = epoch_loss_sum / max(epoch_paths, 1)
             losses.append(epoch_loss)
             q_history.append(self.q.detach().item())
-
-        if verbose:
-            print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}")
+            
+            if verbose:
+                print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}")
 
         return losses, q_history
 
