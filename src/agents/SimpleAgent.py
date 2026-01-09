@@ -15,7 +15,7 @@ class SimpleAgent(Agent):
                  interest_rate,
                  pref_gpu=True,
                  q=0.5,
-                 optimizer: str = "adam",
+                 hdim=15
                  liability: bool = True):
 
         self.N = len(hedging_instruments)
