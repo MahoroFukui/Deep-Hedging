@@ -15,11 +15,12 @@ class SimpleAgent(Agent):
                  interest_rate,
                  pref_gpu=True,
                  q=0.5,
-                 hdim=15,
+                 h_dim=15,
                  liability: bool = True):
 
         self.N = len(hedging_instruments)
         network_input_dim = self.input_dim()
+        h_dim=self.h_dim
 
         super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability)
         self.q = torch.nn.Parameter(torch.tensor(q, dtype=torch.float32))
