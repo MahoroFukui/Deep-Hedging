@@ -18,9 +18,11 @@ class SimpleAgent(Agent):
                  h_dim=15,
                  optimizer: str = "sgd",
                  liability: bool = True,
-                 initial_wealth: float = 1.0):
+                 initial_wealth: float = 1.0,
+                 lr_policy: float = 5e-3
+                 lr_q: float = 1e-2):
 
-        super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability)
+        super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability, lr_policy, lr_q)
 
         self.criterion = criterion
         self.liability = liability
@@ -45,8 +47,8 @@ class SimpleAgent(Agent):
         policy_params = list(self.network.parameters())
         q_params = [self.q]     
 
-        lr_policy=1e-4
-        lr_q=1e-2
+        lr_policy=self.lr_policy
+        lr_q=self.lr_q
         
         if optimizer.lower() == "sgd":
             self.opt_policy = torch.optim.SGD(policy_params, lr=lr_policy)
