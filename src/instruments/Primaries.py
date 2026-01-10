@@ -39,8 +39,97 @@ class GeometricBrownianStock(Primary):
             self.S0 * torch.exp(torch.cumsum((self.mu - 0.5 * self.sigma ** 2) * torch.ones(P, T - 1) + self.sigma * torch.randn(P, T - 1), dim=1))
         ], dim=1)
 
-
 class HestonStock(Primary):
+    """
+    Heston stochastic volatility model.
+
+    dS_t = mu * S_t dt + sqrt(v_t) * S_t dW1_t
+    dv_t = kappa*(theta - v_t) dt + xi*sqrt(v_t) dW2_t
+    corr(dW1, dW2) = rho
+
+    Discretization:
+      - v: full-truncation Euler (keeps variance nonnegative-ish)
+      - S: log-Euler using v_t (or v_{t+dt} if you prefer)
+    """
+
+    def __init__(self, S0, mu, v0, kappa, theta, xi, rho, dt=1.0, eps=1e-12, device=None, dtype=torch.float32):
+        self.S0 = float(S0)
+        self.mu = float(mu)
+
+        self.v0 = float(v0)
+        self.kappa = float(kappa)
+        self.theta = float(theta)
+        self.xi = float(xi)
+        self.rho = float(rho)
+
+        self.dt = float(dt)
+        self.eps = float(eps)
+        self.device = device
+        self.dtype = dtype
+
+        if not (-1.0 < self.rho < 1.0):
+            raise ValueError("rho must be in (-1, 1).")
+        if self.kappa <= 0 or self.theta <= 0 or self.xi <= 0 or self.v0 < 0:
+            raise ValueError("Require kappa>0, theta>0, xi>0, v0>=0.")
+
+    def name(self):
+        return (f"Heston Stock with S0={self.S0}, mu={self.mu}, v0={self.v0}, "
+                f"kappa={self.kappa}, theta={self.theta}, xi={self.xi}, rho={self.rho}, dt={self.dt}")
+
+    @torch.no_grad()
+    def simulate(self, P, T):
+        """
+        Returns:
+          S_paths: torch.Tensor of shape (P, T) with S_paths[:,0]=S0
+        """
+        device = self.device if self.device is not None else "cpu"
+        dtype = self.dtype
+
+        P = int(P)
+        T = int(T)
+        if T < 1:
+            raise ValueError("T must be >= 1.")
+
+        dt = self.dt
+        sqrt_dt = dt ** 0.5
+
+        # Allocate
+        S = torch.empty((P, T), device=device, dtype=dtype)
+        v = torch.empty((P, T), device=device, dtype=dtype)
+
+        # Initial
+        S[:, 0] = self.S0
+        v[:, 0] = self.v0
+
+        # Pre-generate independent normals
+        Z1 = torch.randn((P, T - 1), device=device, dtype=dtype)
+        Z2 = torch.randn((P, T - 1), device=device, dtype=dtype)
+
+        # Correlate: dW2 = rho*dW1 + sqrt(1-rho^2)*dW_perp
+        dW1 = sqrt_dt * Z1
+        dW2 = sqrt_dt * (self.rho * Z1 + (1.0 - self.rho**2) ** 0.5 * Z2)
+
+        # Iterate
+        for t in range(T - 1):
+            vt = v[:, t]
+
+            # Full truncation: use vt_pos in diffusion; update v then truncate
+            vt_pos = torch.clamp(vt, min=0.0)
+            sqrt_vt = torch.sqrt(torch.clamp(vt_pos, min=self.eps))
+
+            # Variance update
+            v_next = vt + self.kappa * (self.theta - vt_pos) * dt + self.xi * sqrt_vt * dW2[:, t]
+            v_next = torch.clamp(v_next, min=0.0)  # enforce nonnegativity
+            v[:, t + 1] = v_next
+
+            # Stock update (log-Euler)
+            # Use vt_pos (or v_next) for instantaneous variance in this step; both are used in literature.
+            S[:, t + 1] = S[:, t] * torch.exp((self.mu - 0.5 * vt_pos) * dt + sqrt_vt * dW1[:, t])
+
+        return S
+
+
+class HestonStock_oudated(Primary):
     # only returns stock price, not variance
     # as this would need some editing
 
@@ -74,6 +163,8 @@ class HestonStock(Primary):
         variance_increments = torch.randn(P, T - 1) * np.sqrt(step_size)
 
         for t in range(1, T):
+            #outdated: S[:, t] = S[:, t-1] + self.mu * S[:, t-1] * step_size + torch.sqrt(torch.clamp(V[:,t-1], min=0)) * S[:, t-1] * stock_increments[:, t-1]
+            #outdated: V[:, t] = V[:, t-1] + self.kappa * (self.theta - torch.clamp(V[:,t-1], min=0)) * step_size + self.xi * torch.sqrt(torch.clamp(V[:,t-1], min=0)) * (self.rho * variance_increments[:, t-1] + np.sqrt(1 - self.rho**2) * stock_increments[:, t-1])
             S[:, t] = S[:, t-1] + self.mu * S[:, t-1] * step_size + torch.sqrt(torch.clamp(V[:,t-1], min=0)) * S[:, t-1] * stock_increments[:, t-1]
             V[:, t] = V[:, t-1] + self.kappa * (self.theta - torch.clamp(V[:,t-1], min=0)) * step_size + self.xi * torch.sqrt(torch.clamp(V[:,t-1], min=0)) * (self.rho * variance_increments[:, t-1] + np.sqrt(1 - self.rho**2) * stock_increments[:, t-1])
 
