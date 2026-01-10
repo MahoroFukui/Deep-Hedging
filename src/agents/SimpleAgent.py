@@ -22,7 +22,7 @@ class SimpleAgent(Agent):
                  lr_policy: float = 5e-3,
                  lr_q: float = 1e-2,):
 
-        super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability, lr_policy, lr_q)
+        super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability)
 
         self.criterion = criterion
         self.liability = liability
