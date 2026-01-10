@@ -511,9 +511,9 @@ class Agent(torch.nn.Module, ABC):
             else:
                 bad_epochs += 1
                 if verbose:
-                    print(f"  no improvement ({bad_epochs}/{patience})")
+                    print(f"  no improvement ({bad_epochs}/{3})")
     
-                if bad_epochs >= patience:
+                if bad_epochs >= 3:
                     if verbose:
                         print(
                             f"Early stopping at epoch {epoch}. "
