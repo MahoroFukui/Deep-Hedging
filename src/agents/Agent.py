@@ -465,6 +465,9 @@ class Agent(torch.nn.Module, ABC):
         if logging:
             self.training_logs["training_PL"] = torch.zeros(epochs, paths)
 
+        import copy
+        from tqdm import tqdm
+
         for epoch in tqdm(range(epochs), desc="Training", total=epochs, leave=False, unit="epoch"):
             self.train()
             epoch_loss_sum = 0.0
