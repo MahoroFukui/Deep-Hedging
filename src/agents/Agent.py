@@ -532,7 +532,7 @@ class Agent(torch.nn.Module, ABC):
 
         return losses
         
-    def fit_CRRA_option_price(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = True, T = 365, logging = True, alpha=None, beta1=None, beta2=None, baseline_EU_mean = None, p_norm = None, q_min = 0.0, q_max = 1.0):
+    def fit_CRRA_option_price_no_earlystopping(self, contingent_claim: Claim, batch_paths: int, epochs = 50, paths = 100, verbose = True, T = 365, logging = True, alpha=None, beta1=None, beta2=None, baseline_EU_mean = None, p_norm = None, q_min = 0.0, q_max = 1.0):
         losses = []
         q_history = []
         
@@ -565,6 +565,119 @@ class Agent(torch.nn.Module, ABC):
                 print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}, EU diff: {EU_with_liability - baseline_EU_mean: .5f}, option price: {q_val: .5f}")
 
         return losses, q_history
+        
+    def fit_CRRA_option_price(
+    self,
+    contingent_claim: Claim,
+    batch_paths: int,
+    epochs: int = 50,
+    paths: int = 100,
+    verbose: bool = True,
+    T: int = 365,
+    logging: bool = True,
+    alpha=None,
+    beta1=None,
+    beta2=None,
+    baseline_EU_mean=None,
+    p_norm=None,
+    q_min: float = 0.0,
+    q_max: float = 1.0,
+    patience: int = 3):
+        """
+        Early stopping if epoch loss fails to improve for `patience` consecutive epochs.
+        Saves/restores the best model (policy network + q).
+    
+        Returns:
+            losses (list[float]): epoch losses up to stopping point
+            q_history (list[float]): q values per epoch up to stopping point
+        """
+        import copy
+        import torch
+        import torch.nn.functional as F
+    
+        losses = []
+        q_history = []
+    
+        # ---- early stopping bookkeeping ----
+        best_loss = float("inf")
+        bad_epochs = 0
+        best_state = None
+    
+        for epoch in range(epochs):
+            self.train()
+            epoch_loss_sum = 0.0
+            epoch_paths = 0
+    
+            # For logging print (use last batch's EU; optionally change to epoch-average)
+            EU_with_liability_last = None
+    
+            batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
+            for start, current_batch_size in batch_iter:
+                profit, wealth_path = self.pl(contingent_claim, current_batch_size, T, False, self.q)
+    
+                EU_with_liability = self.criterion(profit)
+                EU_with_liability_last = EU_with_liability.detach()
+    
+                loss_before_other_penalties = self.crra_ruin_penalized_loss(
+                    terminal_wealth=profit,
+                    wealth_path=wealth_path,
+                    lambda_ruin=500,
+                    tau=1e-2,
+                    p=1
+                )
+    
+                low = F.softplus((q_min - self.q) / 1e-1)
+                high = F.softplus((self.q - q_max) / 1e-1)
+                penalty_q = low**2 + high**2
+    
+                penalty_match = torch.abs(EU_with_liability - baseline_EU_mean) ** p_norm
+    
+                loss = alpha * loss_before_other_penalties + beta1 * penalty_q + beta2 * penalty_match
+    
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+    
+                epoch_loss_sum += loss.item() * current_batch_size
+                epoch_paths += current_batch_size
+    
+            epoch_loss = epoch_loss_sum / max(epoch_paths, 1)
+            losses.append(epoch_loss)
+    
+            q_val = self.q.detach().item() if torch.is_tensor(self.q) else float(self.q)
+            q_history.append(q_val)
+    
+            if verbose:
+                eu_diff = float("nan")
+                if EU_with_liability_last is not None:
+                    # EU_with_liability_last may be tensor scalar; make it float
+                    eu_diff = (EU_with_liability_last - baseline_EU_mean).item() if torch.is_tensor(EU_with_liability_last) else float(EU_with_liability_last - baseline_EU_mean)
+                print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}, EU diff: {eu_diff: .5f}, option price: {q_val: .5f}")
+    
+            # ---- EARLY STOPPING LOGIC ----
+            if epoch_loss < best_loss:
+                best_loss = epoch_loss
+                bad_epochs = 0
+    
+                best_state = {
+                    "network": copy.deepcopy(self.network.state_dict()),
+                    "q": self.q.detach().clone()
+                }
+            else:
+                bad_epochs += 1
+                if bad_epochs >= patience:
+                    if verbose:
+                        print(f"Early stopping at epoch {epoch}. Best loss: {best_loss:.6f}")
+                    break
+    
+        # ---- RESTORE BEST MODEL ----
+        if best_state is not None:
+            self.network.load_state_dict(best_state["network"])
+            with torch.no_grad():
+                self.q.copy_(best_state["q"])
+    
+        return losses, q_history
+
 
 
     def validate(self, contingent_claim: Claim, paths = int(1e4), T = 365, logging = True):
