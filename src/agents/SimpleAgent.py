@@ -25,7 +25,12 @@ class SimpleAgent(Agent):
         self.initial_wealth = initial_wealth
 
         super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability)
-        self.q = torch.nn.Parameter(torch.tensor(q, dtype=torch.float32))
+                     
+        if self.liability == True:
+            self.q = torch.nn.Parameter(torch.tensor(q, dtype=torch.float32))
+        else:
+            self.q = torch.nn.Parameter(torch.tensor(0, dtype=torch.float32))
+            
         self.network = torch.nn.Sequential(
         OrderedDict([
             ('fc1', torch.nn.Linear(network_input_dim, h_dim)),
