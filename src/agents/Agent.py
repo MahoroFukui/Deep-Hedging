@@ -346,7 +346,7 @@ class Agent(torch.nn.Module, ABC):
 
         return hedge_paths, primary_paths[contingent_claim.primary()]
 
-    def pl(self, contingent_claim: Claim, P, T, logging = True, initial_wealth=1.0): #calculates pl if criterion is not CRRA/is entropy; calculates terminal wealth if criterion is CRRA
+    def pl(self, contingent_claim: Claim, P, T, logging = True, initial_wealth=1.0,): #calculates pl if criterion is not CRRA/is entropy; calculates terminal wealth if criterion is CRRA
         """
         :param contingent_claim: Instrument
         :param paths: int
