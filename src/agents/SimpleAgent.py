@@ -56,6 +56,13 @@ class SimpleAgent(Agent):
             self.optimizer = torch.optim.Adam([
                 {"params": policy_params, "lr": lr_policy},
                 {"params": q_params,      "lr": lr_q},], betas=(0.9, 0.999))
+
+        # ---- SAFE INITIALIZATION FOR DEEP HEDGING ----
+        last_layer = self.network[-1]   # fc3
+        
+        torch.nn.init.zeros_(last_layer.weight)
+        torch.nn.init.zeros_(last_layer.bias)
+
             
         #if optimizer.lower() == "sgd":
             #self.optimizer = torch.optim.SGD(list(self.network.parameters()) + [self.q], lr=lr)
