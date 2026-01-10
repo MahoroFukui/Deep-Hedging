@@ -21,7 +21,7 @@ class Primary(Instrument):
     def delattr(self, primary_path):
         return torch.ones_like(primary_path)
 
-class GeometricBrownianStock(Primary):
+class GeometricBrownianStock_outdated(Primary):
 
     def __init__(self, S0, mu, sigma):
         self.S0 = S0
@@ -38,6 +38,66 @@ class GeometricBrownianStock(Primary):
             self.S0 * torch.ones(P, 1),
             self.S0 * torch.exp(torch.cumsum((self.mu - 0.5 * self.sigma ** 2) * torch.ones(P, T - 1) + self.sigma * torch.randn(P, T - 1), dim=1))
         ], dim=1)
+
+import torch
+
+class GeometricBrownianStock(Primary):
+    """
+    Simulates GBM paths and returns a (P, T) price matrix, where:
+      - P = number of paths
+      - T = number of columns in the returned matrix (including S0 at t=0)
+
+    Convention:
+      - total horizon = horizon (float, e.g. 1.0 year)
+      - number of steps = T-1
+      - dt = horizon / (T-1)
+    """
+
+    def __init__(self, S0: float, mu: float, sigma: float, horizon: float = 1.0, seed: int = 0, device=None, dtype=torch.float32):
+        self.S0 = float(S0)
+        self.mu = float(mu)
+        self.sigma = float(sigma)
+        self.horizon = float(horizon)
+        self.seed = int(seed)
+        self.device = device
+        self.dtype = dtype
+
+    def name(self):
+        return f"Geometric Brownian Stock with S0={self.S0}, mu={self.mu}, sigma={self.sigma}, horizon={self.horizon}"
+
+    def simulate(self, P: int, T: int) -> torch.Tensor:
+        """
+        Returns:
+          S: torch.Tensor of shape (P, T), with S[:,0] = S0.
+        """
+        # device handling
+        device = self.device if self.device is not None else torch.device("cpu")
+
+        # reproducibility (optional; remove if you want randomness each call)
+        torch.manual_seed(self.seed)
+
+        if T <= 0:
+            raise ValueError("T must be >= 1.")
+        if P <= 0:
+            raise ValueError("P must be >= 1.")
+        if T == 1:
+            return torch.full((P, 1), self.S0, device=device, dtype=self.dtype)
+
+        n_steps = T - 1
+        dt = self.horizon / n_steps
+
+        z = torch.randn(P, n_steps, device=device, dtype=self.dtype)
+
+        drift = (self.mu - 0.5 * self.sigma**2) * dt
+        diffusion = self.sigma * torch.sqrt(torch.tensor(dt, device=device, dtype=self.dtype)) * z
+
+        log_returns = drift + diffusion
+        log_S = torch.cumsum(log_returns, dim=1)
+
+        # prepend log S_0 = 0 so that S_0 * exp(0) = S_0
+        log_S = torch.cat([torch.zeros(P, 1, device=device, dtype=self.dtype), log_S], dim=1)
+
+        return self.S0 * torch.exp(log_S)
 
 class HestonStock(Primary):
     """
