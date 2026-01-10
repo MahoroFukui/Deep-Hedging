@@ -26,7 +26,13 @@ class SimpleAgent(Agent):
         self.initial_wealth = initial_wealth
 
         super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability)
-                     
+
+        self.criterion = criterion
+        self.liability = liability
+        self.N = len(hedging_instruments)
+        network_input_dim = self.input_dim()
+        self.initial_wealth = initial_wealth
+        
         if self.liability == True:
             self.q = torch.nn.Parameter(torch.tensor(q, dtype=torch.float32))
         else:
