@@ -811,7 +811,7 @@ class Agent(torch.nn.Module, ABC):
                 bad_epochs += 1
                 if bad_epochs >= patience:
                     if verbose:
-                        print(f"Early stopping at epoch {epoch}. Best Total Loss: {epoch_total_loss: .5f})
+                        print(f"Early stopping at epoch {epoch}. Best Total Loss: {epoch_total_loss: .5f}")
                     break
     
         if best_state is not None:
