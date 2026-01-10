@@ -457,6 +457,11 @@ class Agent(torch.nn.Module, ABC):
         :return: None
         """
         losses = []
+        
+        best_loss = float("inf")
+        bad_epochs = 0
+        best_state = None
+        
         if logging:
             self.training_logs["training_PL"] = torch.zeros(epochs, paths)
 
