@@ -694,6 +694,7 @@ class Agent(torch.nn.Module, ABC):
     q_min: float = 0.0,
     q_max: float = 1.0,
     patience: int = 5):
+        import copy
         losses, q_history = [], []
     
         best_total_loss = float("inf")
