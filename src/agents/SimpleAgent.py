@@ -16,7 +16,7 @@ class SimpleAgent(Agent):
                  pref_gpu=True,
                  q=0.5,
                  h_dim=15,
-                 optimizer: str = "sgd",
+                 optimizer: str = "Adam",
                  liability: bool = True,
                  initial_wealth: float = 1.0,
                  lr_policy: float = 5e-3,
