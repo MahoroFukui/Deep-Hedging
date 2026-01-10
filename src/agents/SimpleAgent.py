@@ -41,9 +41,7 @@ class SimpleAgent(Agent):
             ('relu1', torch.nn.ReLU()),
             ('fc2', torch.nn.Linear(h_dim, h_dim)),
             ('relu2', torch.nn.ReLU()),
-            ('fc3', torch.nn.Linear(h_dim, h_dim)),
-            ('relu3', torch.nn.ReLU()),
-            ('fc4', torch.nn.Linear(h_dim, self.N))
+            ('fc3', torch.nn.Linear(h_dim, self.N))
         ])
         ).to(self.device)
         policy_params = list(self.network.parameters())
