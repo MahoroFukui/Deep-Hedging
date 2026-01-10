@@ -371,7 +371,6 @@ class Agent(torch.nn.Module, ABC):
             delta = contingent_claim.delta(claim_path)
             self.portfolio_logs["claim_delta"] = delta
             
-
         return profit, wealth_path #changed from: profit, claim_payoff
 
     def crra_ruin_penalized_loss(
@@ -566,7 +565,7 @@ class Agent(torch.nn.Module, ABC):
 
         return losses, q_history
         
-    def fit_CRRA_option_price(
+    def fit_CRRA_option_price_earlystopping_outdated(
     self,
     contingent_claim: Claim,
     batch_paths: int,
@@ -677,6 +676,151 @@ class Agent(torch.nn.Module, ABC):
                 self.q.copy_(best_state["q"])
     
         return losses, q_history
+
+
+    def fit_CRRA_option_price(self,
+    contingent_claim: Claim,
+    batch_paths: int,
+    epochs: int = 50,
+    paths: int = 100,
+    verbose: bool = True,
+    T: int = 365,
+    logging: bool = True,
+    alpha=None,
+    beta1=None,
+    beta2=None,
+    baseline_EU_mean=None,
+    p_norm=None,
+    q_min: float = 0.0,
+    q_max: float = 1.0,
+    patience: int = 5):
+        losses, q_history = [], []
+    
+        best_total_loss = float("inf")
+        best_policy_loss = float("inf")
+        best_q_loss = float("inf")
+        bad_epochs = 0
+        best_state = None
+    
+        for epoch in range(epochs):
+            self.train()
+            epoch_loss_sum = 0.0
+            epoch_paths = 0
+            EU_with_liability_last = None
+    
+            batch_iter = [(start, min(batch_paths, paths - start)) for start in range(0, paths, batch_paths)]
+            for start, current_batch_size in batch_iter:
+    
+                # =========================
+                # (A) POLICY UPDATE ONLY
+                # =========================
+                profit_p, wealth_path_p = self.pl(
+                    contingent_claim, current_batch_size, T, False,
+                    self.q.detach()          # <-- blocks grads to q
+                )
+    
+                policy_loss = alpha * self.crra_ruin_penalized_loss(
+                    terminal_wealth=profit_p,
+                    wealth_path=wealth_path_p,
+                    lambda_ruin=0.01,
+                    tau=1e-2,
+                    p=1
+                )
+    
+                self.opt_policy.zero_grad(set_to_none=True)
+                policy_loss.backward()
+                self.opt_policy.step()
+    
+                # =========================
+                # (B) q UPDATE ONLY
+                # =========================
+                # Freeze policy network so q-loss does NOT update policy_params
+                for p in self.network.parameters():
+                    p.requires_grad_(False)
+    
+                profit_q, wealth_path_q = self.pl(
+                    contingent_claim, current_batch_size, T, False,
+                    self.q                  # <-- allow grads to q
+                )
+    
+                EU_with_liability = self.criterion(profit_q)
+                EU_with_liability_last = EU_with_liability.detach()
+    
+                low  = F.softplus((q_min - self.q) / 1e-1)
+                high = F.softplus((self.q - q_max) / 1e-1)
+                penalty_q = low**2 + high**2
+    
+                penalty_match = torch.abs(EU_with_liability - baseline_EU_mean) ** p_norm
+    
+                q_loss = beta1 * penalty_q + beta2 * penalty_match
+    
+                self.opt_q.zero_grad(set_to_none=True)
+                q_loss.backward()
+                self.opt_q.step()
+    
+                # Unfreeze policy network
+                for p in self.network.parameters():
+                    p.requires_grad_(True)
+    
+                # bookkeeping (for early stopping you can decide what "epoch_loss" means)
+                batch_loss_for_logging = (policy_loss.detach() + q_loss.detach()).item()
+                epoch_loss_sum += batch_loss_for_logging * current_batch_size
+                detached_policy_loss = policy_loss.detach().item()
+                epoch_policy_loss_sum += detached_policy_loss * current_batch_size
+                detached_q_loss = q_loss.detach().item()
+                epoch_q_loss_sum += detached_q_loss * current_batch_size
+                
+                epoch_paths += current_batch_size
+    
+            epoch_total_loss = epoch_loss_sum / max(epoch_paths, 1)
+            epoch_policy_loss = epoch_policy_loss_sum / max(epoch_paths, 1)
+            epoch_q_loss = epoch_q_loss_sum / max(epoch_paths, 1)
+
+            #----------
+            losses.append(epoch_total_loss)
+            q_val = self.q.detach().item()
+            q_history.append(q_val)
+            #----------^not really relevant though
+    
+            if verbose:
+                eu_diff = (EU_with_liability_last - baseline_EU_mean).item() if EU_with_liability_last is not None else float("nan")
+                print(f"Epoch: {epoch}, Total Loss: {epoch_total_loss: .5f}, Policy Loss: {epoch_policy_loss: .5f},  Q (option pr) Loss: {epoch_q_loss: .5f}")
+                print(f"Epoch: {epoch}, EU diff: {eu_diff: .5f}, option price: {q_val: .5f}")
+    
+            # Early stopping uses epoch_loss; you may prefer to stop on policy_loss only
+            if epoch_total_loss < best_total_loss:
+                best_total_loss = epoch_total_loss
+                bad_epochs = 0
+                best_state = {
+                    "network": copy.deepcopy(self.network.state_dict()),
+                    "q": self.q.detach().clone()
+                }
+            elif epoch_policy_loss < best_policy_loss:
+                best_policy_loss = epoch_policy_loss
+                bad_epochs = 0
+                best_state = {
+                    "network": copy.deepcopy(self.network.state_dict()),
+                }
+            elif epoch_q_loss < best_q_loss:
+                best_q_loss = epoch_q_loss
+                bad_epochs = 0
+                best_state = {
+                    "q": self.q.detach().clone()
+                }
+            else:
+                bad_epochs += 1
+                if bad_epochs >= patience:
+                    if verbose:
+                        print(f"Early stopping at epoch {epoch}. Best Total Loss: {epoch_total_loss: .5f})
+                    break
+    
+        if best_state is not None:
+            self.network.load_state_dict(best_state["network"])
+            with torch.no_grad():
+                self.q.copy_(best_state["q"])
+    
+        return losses, q_history
+
 
 
 
