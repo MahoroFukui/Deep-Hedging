@@ -489,6 +489,36 @@ class Agent(torch.nn.Module, ABC):
             if verbose:
                 print(f"Epoch: {epoch}, Loss: {epoch_loss: .5f}")
 
+            # ---- EARLY STOPPING LOGIC ----
+            if epoch_loss < best_loss:
+                best_loss = epoch_loss
+                bad_epochs = 0
+    
+                # deep copy model + optimizer-independent state
+                best_state = {
+                    "network": copy.deepcopy(self.network.state_dict()),
+                    "q": self.q.detach().clone()
+                }
+    
+            else:
+                bad_epochs += 1
+                if verbose:
+                    print(f"  no improvement ({bad_epochs}/{patience})")
+    
+                if bad_epochs >= patience:
+                    if verbose:
+                        print(
+                            f"Early stopping at epoch {epoch}. "
+                            f"Best loss: {best_loss:.6f}"
+                        )
+                    break
+    
+        # ---- RESTORE BEST MODEL ----
+        if best_state is not None:
+            self.network.load_state_dict(best_state["network"])
+            with torch.no_grad():
+                self.q.copy_(best_state["q"])
+
         if logging:
             self.training_logs["training_losses"] = torch.Tensor(losses).cpu()
 
