@@ -632,8 +632,9 @@ class Agent(torch.nn.Module, ABC):
     
                 penalty_match = torch.abs(EU_with_liability - baseline_EU_mean) ** p_norm
     
-                loss = alpha * loss_before_other_penalties + beta1 * penalty_q + beta2 * penalty_match
-    
+                #loss = alpha * loss_before_other_penalties + beta1 * penalty_q + beta2 * penalty_match
+                loss = penalty_match
+                    
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
