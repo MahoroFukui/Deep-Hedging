@@ -97,7 +97,7 @@ class GeometricBrownianStock(Primary):
         # prepend log S_0 = 0 so that S_0 * exp(0) = S_0
         log_S = torch.cat([torch.zeros(P, 1, device=device, dtype=self.dtype), log_S], dim=1)
 
-        return self.S0 * torch.exp(log_S)
+        return self.S0 * torch.exp(log_S) * 30
 
 class HestonStock(Primary):
     """
