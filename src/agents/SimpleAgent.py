@@ -47,8 +47,8 @@ class SimpleAgent(Agent):
         policy_params = list(self.network.parameters())
         q_params = [self.q]     
 
-        lr_policy=self.lr_policy
-        lr_q=self.lr_q
+        self.lr_policy=lr_policy
+        self.lr_q=lr_q
         
         if optimizer.lower() == "sgd":
             self.opt_policy = torch.optim.SGD(policy_params, lr=lr_policy)
