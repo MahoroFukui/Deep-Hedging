@@ -478,7 +478,7 @@ class Agent(torch.nn.Module, ABC):
                 loss = self.crra_ruin_penalized_loss(
                     terminal_wealth=profit,        # or terminal_wealth if you want ruin relative to gross wealth
                     wealth_path=wealth_path,       # penalize min wealth along the hedge
-                    lambda_ruin=500,
+                    lambda_ruin=1,
                     tau=1e-2,
                     p=1
                 )
