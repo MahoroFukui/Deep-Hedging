@@ -705,6 +705,8 @@ class Agent(torch.nn.Module, ABC):
         for epoch in range(epochs):
             self.train()
             epoch_loss_sum = 0.0
+            epoch_policy_loss_sum = 0.0
+            epoch_q_loss_sum = 0.0
             epoch_paths = 0
             EU_with_liability_last = None
     
