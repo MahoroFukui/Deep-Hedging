@@ -482,9 +482,9 @@ class Agent(torch.nn.Module, ABC):
                     p=1
                 )
 
-                self.optimizer.zero_grad()
+                self.opt_policy.zero_grad()
                 loss.backward()
-                self.optimizer.step()
+                self.opt_policy.step()
                 epoch_loss_sum += loss.item() * current_batch_size
                 epoch_paths += current_batch_size
                 
