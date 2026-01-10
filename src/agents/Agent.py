@@ -207,133 +207,128 @@ class Agent(torch.nn.Module, ABC):
         
         return terminal_wealth, all_wealth_paths
 
-    def compute_portfolio_if_CRRA(
-    self,
-    hedge_paths,
-    logging: bool = True,
-    initial_wealth: float = 1.0
-):
-    """
-    Portfolio simulation with borrowing allowed but capped at (pre-trade) net worth at each time k:
-        cash_after >= -max(0, net_worth_before)
-
-    Notes:
-    - Assumes policy outputs trade increments dtheta in shares.
-    - Assumes cost_function(dtheta, state) returns per-path cost (P,) or (P,1).
-    """
-
-    import torch
-
-    if hedge_paths.dim() == 2:
-        hedge_paths = hedge_paths.unsqueeze(-1)
-
-    P, T, N = hedge_paths.shape
-    device = self.device
-    eps = 1e-12
-
-    # Use agent's stored initial wealth unless you truly want the argument
-    initial_wealth = self.initial_wealth
-
-    cash_account = torch.zeros(P, T, device=device)
-    portfolio_value = torch.zeros(P, T, device=device)
-    positions = torch.zeros(P, T, N, device=device)
-
-    # Keep q_batch shape consistent with your agents; not used inside SimpleAgent, used in RecurrentAgent
-    q_batch = torch.zeros(P, T, device=device)
-
-    # ---------- t = 0 ----------
-    S0 = hedge_paths[:, 0]  # (P, N)
-
-    cash0 = torch.full((P,), initial_wealth / 2, device=device) + self.q
-    cash_account[:, 0] = cash0
-
-    # Your baseline initial holdings (50/50 cash vs stock). Keep it unless you want otherwise.
-    positions[:, 0] = initial_wealth / (2 * S0)
-
-    # Policy action: trade increment at t=0
-    state0 = (hedge_paths[:, :1], cash_account[:, :1], positions[:, :1], T, q_batch)
-    dtheta0 = self.policy(state0)  # (P, N)
-
-    spend0 = (dtheta0 * S0).sum(dim=-1)  # (P,)  positive = pay cash (buy)
-    cost0 = self.cost_function(dtheta0, state0)
-    cost0 = cost0.squeeze(-1) if cost0.dim() > 1 else cost0  # (P,)
-
-    need0 = spend0 + cost0  # net cash outflow required
-
-    # Borrowing cap at pre-trade net worth: cash_after >= -max(0, NW_before)
-    stock_value0 = (positions[:, 0] * S0).sum(dim=-1)  # (P,)
-    nw0 = cash0 + stock_value0                         # (P,)
-    borrow_cap0 = torch.clamp(nw0, min=0.0)            # cannot borrow if already insolvent
-    min_cash0 = -borrow_cap0                           # cash floor
-
-    # Ensure cash_after = cash0 - need0 >= min_cash0  => need0 <= cash0 - min_cash0
-    limit0 = cash0 - min_cash0
-
-    scale0 = torch.ones_like(need0)
-    mask0 = need0 > limit0
-    scale0[mask0] = torch.clamp(limit0[mask0] / (need0[mask0] + eps), max=1.0)
-
-    dtheta0 = dtheta0 * scale0.unsqueeze(-1)
-    spend0 = spend0 * scale0
-    cost0 = cost0 * scale0  # exact for proportional/1-homogeneous costs; otherwise recompute after scaling
-
-    # Update holdings and cash
-    positions[:, 0] = positions[:, 0] + dtheta0
-    cash_account[:, 0] = cash0 - spend0 - cost0
-    portfolio_value[:, 0] = cash_account[:, 0] + (positions[:, 0] * S0).sum(dim=-1)
-
-    # ---------- t = 1..T-1 ----------
-    for t in range(1, T):
-        St = hedge_paths[:, t]  # (P, N)
-
-        # accrue interest on cash
-        cash_account[:, t] = cash_account[:, t - 1] * (1.0 + self.interest_rate)
-        cash_before = cash_account[:, t]  # cash available before trade at time t
-
-        # policy action (trade increment)
-        state = (hedge_paths[:, :t + 1], cash_account[:, :t + 1], positions[:, :t], T, q_batch)
-        dtheta = self.policy(state)  # (P, N)
-
-        spend = (dtheta * St).sum(dim=-1)  # (P,)
-        cost = self.cost_function(dtheta, state)
-        cost = cost.squeeze(-1) if cost.dim() > 1 else cost  # (P,)
-
-        need = spend + cost
-
-        # Borrowing cap based on pre-trade net worth at time t (using positions at t-1 valued at St)
-        stock_value_before = (positions[:, t - 1] * St).sum(dim=-1)  # (P,)
-        nw_before = cash_before + stock_value_before                 # (P,)
-        borrow_cap = torch.clamp(nw_before, min=0.0)
-        min_cash = -borrow_cap
-
-        # Enforce cash_after >= min_cash => need <= cash_before - min_cash
-        limit = cash_before - min_cash
-
-        scale = torch.ones_like(need)
-        mask = need > limit
-        scale[mask] = torch.clamp(limit[mask] / (need[mask] + eps), max=1.0)
-
-        dtheta = dtheta * scale.unsqueeze(-1)
-        spend = spend * scale
-        cost = cost * scale  # exact for proportional costs; otherwise recompute after scaling
-
-        positions[:, t] = positions[:, t - 1] + dtheta
-        cash_account[:, t] = cash_before - spend - cost
-        portfolio_value[:, t] = cash_account[:, t] + (positions[:, t] * St).sum(dim=-1)
-
-    if logging:
-        self.portfolio_logs = {
-            "portfolio_value": portfolio_value.detach().cpu(),
-            "cash_account": cash_account.detach().cpu(),
-            "positions": positions.detach().cpu(),
-            "hedge_paths": hedge_paths.detach().cpu(),
-        }
-
-    # Total wealth is already portfolio_value (cash + stock value); do NOT add cash again.
-    all_wealth_paths = portfolio_value  # (P, T)
-    terminal_wealth = all_wealth_paths[:, -1]  # (P,)
-
-    return terminal_wealth, all_wealth_paths
+    def compute_portfolio_if_CRRA(self, hedge_paths, logging: bool = True, initial_wealth: float = 1.0):
+        """
+        Portfolio simulation with borrowing allowed but capped at (pre-trade) net worth at each time k:
+            cash_after >= -max(0, net_worth_before)
+    
+        Notes:
+        - Assumes policy outputs trade increments dtheta in shares.
+        - Assumes cost_function(dtheta, state) returns per-path cost (P,) or (P,1).
+        """
+    
+        import torch
+    
+        if hedge_paths.dim() == 2:
+            hedge_paths = hedge_paths.unsqueeze(-1)
+    
+        P, T, N = hedge_paths.shape
+        device = self.device
+        eps = 1e-12
+    
+        # Use agent's stored initial wealth unless you truly want the argument
+        initial_wealth = self.initial_wealth
+    
+        cash_account = torch.zeros(P, T, device=device)
+        portfolio_value = torch.zeros(P, T, device=device)
+        positions = torch.zeros(P, T, N, device=device)
+    
+        # Keep q_batch shape consistent with your agents; not used inside SimpleAgent, used in RecurrentAgent
+        q_batch = torch.zeros(P, T, device=device)
+    
+        # ---------- t = 0 ----------
+        S0 = hedge_paths[:, 0]  # (P, N)
+    
+        cash0 = torch.full((P,), initial_wealth / 2, device=device) + self.q
+        cash_account[:, 0] = cash0
+    
+        # Your baseline initial holdings (50/50 cash vs stock). Keep it unless you want otherwise.
+        positions[:, 0] = initial_wealth / (2 * S0)
+    
+        # Policy action: trade increment at t=0
+        state0 = (hedge_paths[:, :1], cash_account[:, :1], positions[:, :1], T, q_batch)
+        dtheta0 = self.policy(state0)  # (P, N)
+    
+        spend0 = (dtheta0 * S0).sum(dim=-1)  # (P,)  positive = pay cash (buy)
+        cost0 = self.cost_function(dtheta0, state0)
+        cost0 = cost0.squeeze(-1) if cost0.dim() > 1 else cost0  # (P,)
+    
+        need0 = spend0 + cost0  # net cash outflow required
+    
+        # Borrowing cap at pre-trade net worth: cash_after >= -max(0, NW_before)
+        stock_value0 = (positions[:, 0] * S0).sum(dim=-1)  # (P,)
+        nw0 = cash0 + stock_value0                         # (P,)
+        borrow_cap0 = torch.clamp(nw0, min=0.0)            # cannot borrow if already insolvent
+        min_cash0 = -borrow_cap0                           # cash floor
+    
+        # Ensure cash_after = cash0 - need0 >= min_cash0  => need0 <= cash0 - min_cash0
+        limit0 = cash0 - min_cash0
+    
+        scale0 = torch.ones_like(need0)
+        mask0 = need0 > limit0
+        scale0[mask0] = torch.clamp(limit0[mask0] / (need0[mask0] + eps), max=1.0)
+    
+        dtheta0 = dtheta0 * scale0.unsqueeze(-1)
+        spend0 = spend0 * scale0
+        cost0 = cost0 * scale0  # exact for proportional/1-homogeneous costs; otherwise recompute after scaling
+    
+        # Update holdings and cash
+        positions[:, 0] = positions[:, 0] + dtheta0
+        cash_account[:, 0] = cash0 - spend0 - cost0
+        portfolio_value[:, 0] = cash_account[:, 0] + (positions[:, 0] * S0).sum(dim=-1)
+    
+        # ---------- t = 1..T-1 ----------
+        for t in range(1, T):
+            St = hedge_paths[:, t]  # (P, N)
+    
+            # accrue interest on cash
+            cash_account[:, t] = cash_account[:, t - 1] * (1.0 + self.interest_rate)
+            cash_before = cash_account[:, t]  # cash available before trade at time t
+    
+            # policy action (trade increment)
+            state = (hedge_paths[:, :t + 1], cash_account[:, :t + 1], positions[:, :t], T, q_batch)
+            dtheta = self.policy(state)  # (P, N)
+    
+            spend = (dtheta * St).sum(dim=-1)  # (P,)
+            cost = self.cost_function(dtheta, state)
+            cost = cost.squeeze(-1) if cost.dim() > 1 else cost  # (P,)
+    
+            need = spend + cost
+    
+            # Borrowing cap based on pre-trade net worth at time t (using positions at t-1 valued at St)
+            stock_value_before = (positions[:, t - 1] * St).sum(dim=-1)  # (P,)
+            nw_before = cash_before + stock_value_before                 # (P,)
+            borrow_cap = torch.clamp(nw_before, min=0.0)
+            min_cash = -borrow_cap
+    
+            # Enforce cash_after >= min_cash => need <= cash_before - min_cash
+            limit = cash_before - min_cash
+    
+            scale = torch.ones_like(need)
+            mask = need > limit
+            scale[mask] = torch.clamp(limit[mask] / (need[mask] + eps), max=1.0)
+    
+            dtheta = dtheta * scale.unsqueeze(-1)
+            spend = spend * scale
+            cost = cost * scale  # exact for proportional costs; otherwise recompute after scaling
+    
+            positions[:, t] = positions[:, t - 1] + dtheta
+            cash_account[:, t] = cash_before - spend - cost
+            portfolio_value[:, t] = cash_account[:, t] + (positions[:, t] * St).sum(dim=-1)
+    
+        if logging:
+            self.portfolio_logs = {
+                "portfolio_value": portfolio_value.detach().cpu(),
+                "cash_account": cash_account.detach().cpu(),
+                "positions": positions.detach().cpu(),
+                "hedge_paths": hedge_paths.detach().cpu(),
+            }
+    
+        # Total wealth is already portfolio_value (cash + stock value); do NOT add cash again.
+        all_wealth_paths = portfolio_value  # (P, T)
+        terminal_wealth = all_wealth_paths[:, -1]  # (P,)
+    
+        return terminal_wealth, all_wealth_paths
 
 
     def generate_paths(self, P, T, contingent_claim):
