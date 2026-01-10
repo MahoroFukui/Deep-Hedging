@@ -18,7 +18,9 @@ class SimpleAgent(Agent):
                  h_dim=15,
                  optimizer: str = "sgd",
                  liability: bool = True,
-                 initial_wealth: float = 1.0):
+                 initial_wealth: float = 1.0
+                 criterion: str = "CRRA"):
+        self.criterion = criterion
         self.liability = liability
         self.N = len(hedging_instruments)
         network_input_dim = self.input_dim()
