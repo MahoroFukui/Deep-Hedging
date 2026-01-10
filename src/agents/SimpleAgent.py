@@ -19,8 +19,8 @@ class SimpleAgent(Agent):
                  optimizer: str = "sgd",
                  liability: bool = True,
                  initial_wealth: float = 1.0,
-                 lr_policy: float = 5e-3
-                 lr_q: float = 1e-2):
+                 lr_policy: float = 5e-3,
+                 lr_q: float = 1e-2,):
 
         super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability, lr_policy, lr_q)
 
