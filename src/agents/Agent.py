@@ -137,7 +137,7 @@ class Agent(torch.nn.Module, ABC):
         S0 = hedge_paths[:, 0]  # (P, N)
         
         cash0 = torch.full((P,), initial_wealth / 2, device=device) + self.q
-        cash_account[:, 0] = 10  # put initial wealth into the history tensor
+        cash_account[:, 0] = cash0  # put initial wealth into the history tensor
         positions[:, 0] = initial_wealth / (2 * S0)
 
         #if q != 0:
