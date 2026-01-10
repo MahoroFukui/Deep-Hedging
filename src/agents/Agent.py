@@ -800,16 +800,10 @@ class Agent(torch.nn.Module, ABC):
                 }
             elif epoch_policy_loss < best_policy_loss:
                 best_policy_loss = epoch_policy_loss
-                bad_epochs = 0
-                best_state = {
-                    "network": copy.deepcopy(self.network.state_dict()),
-                }
+                bad_epochs = 0 
             elif epoch_q_loss < best_q_loss:
                 best_q_loss = epoch_q_loss
                 bad_epochs = 0
-                best_state = {
-                    "q": self.q.detach().clone()
-                }
             else:
                 bad_epochs += 1
                 if bad_epochs >= patience:
