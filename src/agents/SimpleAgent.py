@@ -49,13 +49,12 @@ class SimpleAgent(Agent):
         lr_q=1e-2
         
         if optimizer.lower() == "sgd":
-            self.optimizer = torch.optim.SGD([
-                {"params": policy_params, "lr": lr_policy},
-                {"params": q_params,      "lr": lr_q},])
+            self.opt_policy = torch.optim.SGD(policy_params, lr=lr_policy)
+            self.opt_q      = torch.optim.SGD(q_params,      lr=lr_q)
         else:
-            self.optimizer = torch.optim.Adam([
-                {"params": policy_params, "lr": lr_policy},
-                {"params": q_params,      "lr": lr_q},], betas=(0.9, 0.999))
+            self.opt_policy = torch.optim.Adam(policy_params, lr=lr_policy, betas=(0.9, 0.999))
+            self.opt_q      = torch.optim.Adam(q_params,      lr=lr_q,      betas=(0.9, 0.999))
+
 
         # ---- SAFE INITIALIZATION FOR DEEP HEDGING ----
         last_layer = self.network[-1]   # fc3
