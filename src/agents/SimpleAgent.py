@@ -19,11 +19,6 @@ class SimpleAgent(Agent):
                  optimizer: str = "sgd",
                  liability: bool = True,
                  initial_wealth: float = 1.0):
-        self.criterion = criterion
-        self.liability = liability
-        self.N = len(hedging_instruments)
-        network_input_dim = self.input_dim()
-        self.initial_wealth = initial_wealth
 
         super().__init__(criterion, cost_function, hedging_instruments, interest_rate, pref_gpu, liability)
 
